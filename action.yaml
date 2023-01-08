@@ -1,4 +1,4 @@
-name: buildkit-state
+name: "Buildkit state"
 description: Load and save buildkit state.
 inputs:
   buildx-name:
