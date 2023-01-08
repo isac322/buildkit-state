@@ -1,0 +1,30 @@
+name: buildkit-state
+description: Load and save buildkit state.
+inputs:
+  buildx-name:
+    description: |
+      Name of buildx. Required if `buildx_container_name` is not given.
+      Fill as `name` output of `docker/setup-buildx-action` actions.
+  buildx-container-name:
+    description: Name of buildx container. Required if `buildx_name` is not given.
+  cache-key:
+    description: Github cache key.
+    required: true
+    default: ${{ runner.os }}-buildkit_state-${{ github.sha }}
+  cache-restore-key:
+    description: Github cache restore key.
+    required: true
+    default: |
+      ${{ runner.os }}-buildkit_state-
+  target-types:
+    description: `regular` | `source.local` | `exec.cachemount` | `frontend` | `internal`
+    default: |
+      exec.cachemount
+      frontend
+    required: true
+
+runs:
+  using: node16
+  main: dist/restore/index.js
+  post: dist/save/index.js
+  post-if: success()
