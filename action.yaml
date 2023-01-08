@@ -17,7 +17,7 @@ inputs:
     default: |
       ${{ runner.os }}-buildkit_state-
   target-types:
-    description: `regular` | `source.local` | `exec.cachemount` | `frontend` | `internal`
+    description: '`regular` | `source.local` | `exec.cachemount` | `frontend` | `internal`'
     default: |
       exec.cachemount
       frontend
