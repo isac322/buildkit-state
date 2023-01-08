@@ -97800,6 +97800,15 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -97811,40 +97820,42 @@ const exec = __importStar(__nccwpck_require__(1514));
 const fs = __importStar(__nccwpck_require__(7147));
 const dockerode_1 = __importDefault(__nccwpck_require__(4571));
 const common_1 = __nccwpck_require__(9108);
-async function run() {
-    try {
-        const buildxName = core.getInput('buildx-name');
-        const buildxContainerName = core.getInput('buildx-container-name');
-        validateInputs({ buildxName, buildxContainerName });
-        await exec.exec('docker', ['buildx', 'stop']);
-        const cacheRestoreKeys = core.getMultilineInput('cache-restore-key');
-        const cacheKey = core.getInput('cache-key');
-        const restoredCacheKey = await cache.restoreCache([common_1.BUILDKIT_STATE_PATH], cacheKey, cacheRestoreKeys);
-        if (restoredCacheKey === undefined) {
-            core.info('Failed to fetch cache.');
-            return;
+function run() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const buildxName = core.getInput('buildx-name');
+            const buildxContainerName = core.getInput('buildx-container-name');
+            validateInputs({ buildxName, buildxContainerName });
+            yield exec.exec('docker', ['buildx', 'stop']);
+            const cacheRestoreKeys = core.getMultilineInput('cache-restore-key');
+            const cacheKey = core.getInput('cache-key');
+            const restoredCacheKey = yield cache.restoreCache([common_1.BUILDKIT_STATE_PATH], cacheKey, cacheRestoreKeys);
+            if (restoredCacheKey === undefined) {
+                core.info('Failed to fetch cache.');
+                return;
+            }
+            core.saveState(common_1.STATE_RESTORED_CACHE_KEY, restoredCacheKey);
+            const docker = new dockerode_1.default();
+            const container = docker.getContainer((0, common_1.getContainerName)({ buildxName, buildxContainerName }));
+            const stateStream = fs.createReadStream(common_1.BUILDKIT_STATE_PATH, {
+                encoding: 'binary'
+            });
+            yield container.putArchive(stateStream, { path: '/var/lib/' });
+            stateStream.close();
         }
-        core.saveState(common_1.STATE_RESTORED_CACHE_KEY, restoredCacheKey);
-        const docker = new dockerode_1.default();
-        const container = docker.getContainer((0, common_1.getContainerName)({ buildxName, buildxContainerName }));
-        const stateStream = fs.createReadStream(common_1.BUILDKIT_STATE_PATH, {
-            encoding: 'binary'
-        });
-        await container.putArchive(stateStream, { path: '/var/lib/' });
-        stateStream.close();
-    }
-    catch (error) {
-        if (error instanceof Error) {
-            core.setFailed(error.message);
+        catch (error) {
+            if (error instanceof Error) {
+                core.setFailed(error.message);
+            }
+            else {
+                core.setFailed(error);
+            }
         }
-        else {
-            core.setFailed(error);
+        finally {
+            yield exec.exec('docker', ['buildx', 'inspect', '--bootstrap']);
+            yield exec.exec('docker', ['buildx', 'du', '--verbose']);
         }
-    }
-    finally {
-        await exec.exec('docker', ['buildx', 'inspect', '--bootstrap']);
-        await exec.exec('docker', ['buildx', 'du', '--verbose']);
-    }
+    });
 }
 exports.run = run;
 function validateInputs(opts) {

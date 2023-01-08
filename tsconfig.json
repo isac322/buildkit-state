@@ -1,12 +1,13 @@
 {
   "compilerOptions": {
-    "module": "Node16",
-    "target": "ES2021",
+    "module": "CommonJS",
+    "target": "ES6",
     "strict": true,
     "outDir": "./lib",
     "rootDir": "./src",
     "sourceMap": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "moduleResolution": "Node"
   },
   "exclude": [
     "node_modules",

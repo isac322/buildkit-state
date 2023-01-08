@@ -97800,6 +97800,15 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -97811,50 +97820,52 @@ const cache = __importStar(__nccwpck_require__(7799));
 const dockerode_1 = __importDefault(__nccwpck_require__(4571));
 const fs_1 = __importDefault(__nccwpck_require__(7147));
 const common_1 = __nccwpck_require__(9108);
-async function run() {
-    try {
-        const cacheKey = core.getInput('cache-key');
-        const restoredCacheKey = core.getState(common_1.STATE_RESTORED_CACHE_KEY);
-        if (restoredCacheKey == cacheKey) {
-            core.info('Cache key matched. Ignore cache saving.');
-            return;
-        }
-        await exec.exec('docker', ['buildx', 'stop']);
-        const targetTypes = core.getMultilineInput('target-types');
-        await Promise.all(common_1.STATE_TYPES.filter(type => targetTypes.indexOf(type) == -1).map(type => exec.exec('docker', [
-            'buildx',
-            'prune',
-            '--force',
-            '--filter',
-            `type=${type}`
-        ])));
-        await exec.getExecOutput('docker', ['buildx', 'du', '--verbose']);
-        const buildxName = core.getInput('buildx-name');
-        const buildxContainerName = core.getInput('buildx-container-name');
-        const docker = new dockerode_1.default();
-        const container = docker.getContainer((0, common_1.getContainerName)({ buildxName, buildxContainerName }));
-        const outputStream = fs_1.default.createWriteStream(common_1.BUILDKIT_STATE_PATH, {
-            encoding: 'binary'
-        });
-        const inputStream = await container.getArchive({ path: '/var/lib/buildkit' });
-        const promiseExecute = async () => {
-            return new Promise(resolve => {
-                inputStream.pipe(outputStream);
-                outputStream.on('finish', resolve);
+function run() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const cacheKey = core.getInput('cache-key');
+            const restoredCacheKey = core.getState(common_1.STATE_RESTORED_CACHE_KEY);
+            if (restoredCacheKey == cacheKey) {
+                core.info('Cache key matched. Ignore cache saving.');
+                return;
+            }
+            yield exec.exec('docker', ['buildx', 'stop']);
+            const targetTypes = core.getMultilineInput('target-types');
+            yield Promise.all(common_1.STATE_TYPES.filter(type => targetTypes.indexOf(type) == -1).map(type => exec.exec('docker', [
+                'buildx',
+                'prune',
+                '--force',
+                '--filter',
+                `type=${type}`
+            ])));
+            yield exec.getExecOutput('docker', ['buildx', 'du', '--verbose']);
+            const buildxName = core.getInput('buildx-name');
+            const buildxContainerName = core.getInput('buildx-container-name');
+            const docker = new dockerode_1.default();
+            const container = docker.getContainer((0, common_1.getContainerName)({ buildxName, buildxContainerName }));
+            const outputStream = fs_1.default.createWriteStream(common_1.BUILDKIT_STATE_PATH, {
+                encoding: 'binary'
             });
-        };
-        await promiseExecute();
-        outputStream.close();
-        await cache.saveCache([common_1.BUILDKIT_STATE_PATH], cacheKey);
-    }
-    catch (error) {
-        if (error instanceof Error) {
-            core.setFailed(error.message);
+            const inputStream = yield container.getArchive({ path: '/var/lib/buildkit' });
+            const promiseExecute = () => __awaiter(this, void 0, void 0, function* () {
+                return new Promise(resolve => {
+                    inputStream.pipe(outputStream);
+                    outputStream.on('finish', resolve);
+                });
+            });
+            yield promiseExecute();
+            outputStream.close();
+            yield cache.saveCache([common_1.BUILDKIT_STATE_PATH], cacheKey);
         }
-        else {
-            core.setFailed(error);
+        catch (error) {
+            if (error instanceof Error) {
+                core.setFailed(error.message);
+            }
+            else {
+                core.setFailed(error);
+            }
         }
-    }
+    });
 }
 exports.run = run;
 
