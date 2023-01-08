@@ -5,7 +5,8 @@
     "build": "tsc && ncc build -s -o dist/restore src/main.ts --license license.txt && ncc build -s -o dist/save src/post.ts --license license.txt",
     "format": "prettier --write **/*.ts",
     "lint": "echo \"Fake command that does nothing. It is used in reusable workflows\"",
-    "format-check": "prettier --check **/*.ts"
+    "format-check": "prettier --check **/*.ts",
+    "cache-licensed": "docker run --rm -ti -v $(pwd):/app --workdir=/app node:19 bash -c 'apt-get update -qq && apt-get install -y --no-install-recommends make cmake pkg-config ruby-dev gcc libc6-dev libssl-dev && gem install licensed --source \"https://rubygems.pkg.github.com/github\" && licensed cache'"
   },
   "repository": {
     "type": "git",
