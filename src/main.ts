@@ -1,7 +1,6 @@
 import * as core from '@actions/core';
 import * as cache from '@actions/cache';
 import * as exec from '@actions/exec';
-import * as fs from 'fs';
 import Docskerode from 'dockerode';
 import {
   BUILDKIT_STATE_PATH,
@@ -44,6 +43,10 @@ async function run() {
       return;
     }
 
+    if (core.isDebug()) {
+      await core.group('Listing Github cache', async () => {});
+    }
+
     await core.group('Restoring buildkit state', async () => {
       const docker = new Docskerode();
       const container = docker.getContainer(
@@ -52,11 +55,7 @@ async function run() {
       core.info(`found container ${container.id}`);
 
       core.info('restoring buildkit state into buildx container...');
-      const stateStream = fs.createReadStream(BUILDKIT_STATE_PATH, {
-        encoding: 'binary'
-      });
-      await container.putArchive(stateStream, {path: '/var/lib/'});
-      stateStream.close();
+      await container.putArchive(BUILDKIT_STATE_PATH, {path: '/var/lib/'});
     });
   } catch (error) {
     if (error instanceof Error) {

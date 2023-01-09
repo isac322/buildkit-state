@@ -97816,7 +97816,6 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const cache = __importStar(__nccwpck_require__(7799));
 const exec = __importStar(__nccwpck_require__(1514));
-const fs = __importStar(__nccwpck_require__(7147));
 const dockerode_1 = __importDefault(__nccwpck_require__(4571));
 const common_1 = __nccwpck_require__(9108);
 function run() {
@@ -97845,16 +97844,15 @@ function run() {
                 core.info('Failed to fetch Github cache. Skip buildkit state restoring.');
                 return;
             }
+            if (core.isDebug()) {
+                yield core.group('Listing Github cache', () => __awaiter(this, void 0, void 0, function* () { }));
+            }
             yield core.group('Restoring buildkit state', () => __awaiter(this, void 0, void 0, function* () {
                 const docker = new dockerode_1.default();
                 const container = docker.getContainer((0, common_1.getContainerName)({ buildxName, buildxContainerName }));
                 core.info(`found container ${container.id}`);
                 core.info('restoring buildkit state into buildx container...');
-                const stateStream = fs.createReadStream(common_1.BUILDKIT_STATE_PATH, {
-                    encoding: 'binary'
-                });
-                yield container.putArchive(stateStream, { path: '/var/lib/' });
-                stateStream.close();
+                yield container.putArchive(common_1.BUILDKIT_STATE_PATH, { path: '/var/lib/' });
             }));
         }
         catch (error) {
