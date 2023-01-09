@@ -1,6 +1,7 @@
 # buildkit-state
 
-Restore and save buildkit state to Github cache during image build.
+Restore and save buildkit state to Github cache during image build.  
+Based on https://github.com/dashevo/gh-action-cache-buildkit-state.
 
 ## Goal
 
