@@ -1,6 +1,6 @@
 {
   "name": "builtkit-state",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "scripts": {
     "build": "tsc && ncc build -s -o dist/restore src/main.ts --license license.txt && ncc build -s -o dist/save src/post.ts --license license.txt",
     "format": "prettier --write **/*.ts",
