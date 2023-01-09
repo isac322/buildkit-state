@@ -1,12 +1,12 @@
 {
   "name": "builtkit-state",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "scripts": {
     "build": "tsc && ncc build -s -o dist/restore src/main.ts --license license.txt && ncc build -s -o dist/save src/post.ts --license license.txt",
     "format": "prettier --write **/*.ts",
     "lint": "echo \"Fake command that does nothing. It is used in reusable workflows\"",
     "format-check": "prettier --check **/*.ts",
-    "cache-licensed": "docker run --rm -ti -v $(pwd):/app --workdir=/app node:19 bash -c 'apt-get update -qq && apt-get install -y --no-install-recommends make cmake pkg-config ruby-dev gcc libc6-dev libssl-dev && gem install licensed --source \"https://rubygems.pkg.github.com/github\" && licensed cache'"
+    "cache-licensed": "docker run --rm -ti -v $(pwd):/app --workdir=/app debian:latest bash -c 'apt-get update -qq && apt-get install -y --no-install-recommends curl && curl -fsSL https://deb.nodesource.com/setup_16.x | bash - && apt-get install -y --no-install-recommends nodejs make cmake pkg-config ruby-dev gcc libc6-dev libssl-dev && gem install licensed --source \"https://rubygems.pkg.github.com/github\" && licensed cache'"
   },
   "repository": {
     "type": "git",
@@ -27,6 +27,7 @@
     "@actions/cache": "^3.1.2",
     "@actions/core": "^1.10.0",
     "@actions/exec": "^1.1.1",
+    "@actions/io": "^1.1.2",
     "dockerode": "^3.3.4"
   },
   "devDependencies": {

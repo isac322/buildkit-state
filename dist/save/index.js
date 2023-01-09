@@ -49080,7 +49080,7 @@ var isArray = Array.isArray || function (xs) {
 "use strict";
 
 
-const binding = __nccwpck_require__(4240);
+const binding = __nccwpck_require__(5653);
 
 module.exports = binding.getCPUInfo;
 
@@ -76513,7 +76513,7 @@ let AESGCMDecipher;
 let ChaChaPolyDecipher;
 let GenericDecipher;
 try {
-  binding = __nccwpck_require__(9041);
+  binding = __nccwpck_require__(9623);
   ({ AESGCMCipher, ChaChaPolyCipher, GenericCipher,
      AESGCMDecipher, ChaChaPolyDecipher, GenericDecipher } = binding);
 } catch {}
@@ -97813,13 +97813,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.run = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
 const cache = __importStar(__nccwpck_require__(7799));
+const io = __importStar(__nccwpck_require__(7436));
 const dockerode_1 = __importDefault(__nccwpck_require__(4571));
 const fs_1 = __importDefault(__nccwpck_require__(7147));
 const common_1 = __nccwpck_require__(9108);
+const path_1 = __importDefault(__nccwpck_require__(1017));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -97829,33 +97830,48 @@ function run() {
                 core.info('Cache key matched. Ignore cache saving.');
                 return;
             }
-            yield exec.exec('docker', ['buildx', 'stop']);
-            const targetTypes = core.getMultilineInput('target-types');
-            yield Promise.all(common_1.STATE_TYPES.filter(type => targetTypes.indexOf(type) == -1).map(type => exec.exec('docker', [
-                'buildx',
-                'prune',
-                '--force',
-                '--filter',
-                `type=${type}`
-            ])));
-            yield exec.getExecOutput('docker', ['buildx', 'du', '--verbose']);
-            const buildxName = core.getInput('buildx-name');
-            const buildxContainerName = core.getInput('buildx-container-name');
-            const docker = new dockerode_1.default();
-            const container = docker.getContainer((0, common_1.getContainerName)({ buildxName, buildxContainerName }));
-            const outputStream = fs_1.default.createWriteStream(common_1.BUILDKIT_STATE_PATH, {
-                encoding: 'binary'
-            });
-            const inputStream = yield container.getArchive({ path: '/var/lib/buildkit' });
-            const promiseExecute = () => __awaiter(this, void 0, void 0, function* () {
-                return new Promise(resolve => {
-                    inputStream.pipe(outputStream);
-                    outputStream.on('finish', resolve);
+            yield core.group('Removing unwanted caches', () => __awaiter(this, void 0, void 0, function* () {
+                const targetTypes = core.getMultilineInput('target-types');
+                yield Promise.all(common_1.STATE_TYPES.filter(type => targetTypes.indexOf(type) == -1).map(type => exec.exec('docker', [
+                    'buildx',
+                    'prune',
+                    '--force',
+                    '--filter',
+                    `type=${type}`
+                ])));
+            }));
+            yield core.group('Buildx dist usage', () => __awaiter(this, void 0, void 0, function* () {
+                yield exec.getExecOutput('docker', ['buildx', 'du', '--verbose']);
+            }));
+            yield core.group('Stopping buildx', () => __awaiter(this, void 0, void 0, function* () {
+                yield exec.exec('docker', ['buildx', 'stop']);
+            }));
+            yield core.group('Fetching buildx state', () => __awaiter(this, void 0, void 0, function* () {
+                const buildxName = core.getInput('buildx-name');
+                const buildxContainerName = core.getInput('buildx-container-name');
+                const docker = new dockerode_1.default();
+                const container = docker.getContainer((0, common_1.getContainerName)({ buildxName, buildxContainerName }));
+                core.info(`found container ${container.id}`);
+                core.info('Archiving buildkit state into tar file...');
+                yield io.mkdirP(path_1.default.dirname(common_1.BUILDKIT_STATE_PATH));
+                const outputStream = fs_1.default.createWriteStream(common_1.BUILDKIT_STATE_PATH, {
+                    encoding: 'binary'
                 });
-            });
-            yield promiseExecute();
-            outputStream.close();
-            yield cache.saveCache([common_1.BUILDKIT_STATE_PATH], cacheKey);
+                const inputStream = yield container.getArchive({
+                    path: '/var/lib/buildkit'
+                });
+                const promiseExecute = () => __awaiter(this, void 0, void 0, function* () {
+                    return new Promise(resolve => {
+                        inputStream.pipe(outputStream);
+                        outputStream.on('finish', resolve);
+                    });
+                });
+                yield promiseExecute();
+                outputStream.close();
+            }));
+            yield core.group('Upload into Github cache', () => __awaiter(this, void 0, void 0, function* () {
+                yield cache.saveCache([common_1.BUILDKIT_STATE_PATH], cacheKey);
+            }));
         }
         catch (error) {
             if (error instanceof Error) {
@@ -97867,22 +97883,24 @@ function run() {
         }
     });
 }
-exports.run = run;
+run();
 
 
 /***/ }),
 
-/***/ 4240:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+/***/ 5653:
+/***/ ((module) => {
 
-module.exports = require(__nccwpck_require__.ab + "build/Release/cpufeatures.node")
+module.exports = eval("require")("../build/Release/cpufeatures.node");
+
 
 /***/ }),
 
-/***/ 9041:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+/***/ 9623:
+/***/ ((module) => {
 
-module.exports = require(__nccwpck_require__.ab + "lib/protocol/crypto/build/Release/sshcrypto.node")
+module.exports = eval("require")("./crypto/build/Release/sshcrypto.node");
+
 
 /***/ }),
 
