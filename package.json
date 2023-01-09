@@ -6,7 +6,7 @@
     "format": "prettier --write **/*.ts",
     "lint": "echo \"Fake command that does nothing. It is used in reusable workflows\"",
     "format-check": "prettier --check **/*.ts",
-    "cache-licensed": "docker run --rm -ti -v $(pwd):/app --workdir=/app node:19 bash -c 'apt-get update -qq && apt-get install -y --no-install-recommends make cmake pkg-config ruby-dev gcc libc6-dev libssl-dev && gem install licensed --source \"https://rubygems.pkg.github.com/github\" && licensed cache'"
+    "cache-licensed": "docker run --rm -ti -v $(pwd):/app --workdir=/app debian:latest bash -c 'apt-get update -qq && apt-get install -y --no-install-recommends curl && curl -fsSL https://deb.nodesource.com/setup_16.x | bash - && apt-get install -y --no-install-recommends nodejs make cmake pkg-config ruby-dev gcc libc6-dev libssl-dev && gem install licensed --source \"https://rubygems.pkg.github.com/github\" && licensed cache'"
   },
   "repository": {
     "type": "git",
