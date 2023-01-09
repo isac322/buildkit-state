@@ -10,7 +10,7 @@ import {
   STATE_RESTORED_CACHE_KEY
 } from './common';
 
-export async function run() {
+async function run() {
   try {
     core.debug('action started');
 
@@ -70,3 +70,5 @@ function validateInputs(opts: Inputs) {
     throw new Error('buildx-name or buildx-container-name must be set');
   }
 }
+
+run();

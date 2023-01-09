@@ -10,7 +10,7 @@ import {
   STATE_TYPES
 } from './common';
 
-export async function run() {
+async function run() {
   try {
     core.debug('post action started');
 
@@ -73,3 +73,5 @@ export async function run() {
     }
   }
 }
+
+run();
