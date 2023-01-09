@@ -21,7 +21,7 @@ async function run() {
     });
 
     const cacheExists = await core.group('Fetching Github cache', async () => {
-      const cacheRestoreKeys = core.getMultilineInput('cache-restore-key');
+      const cacheRestoreKeys = core.getMultilineInput('cache-restore-keys');
       const cacheKey = core.getInput('cache-key');
 
       core.info(`fetching github cache using key ${cacheKey}...`);

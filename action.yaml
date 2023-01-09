@@ -11,7 +11,7 @@ inputs:
     description: Github cache key.
     required: true
     default: ${{ runner.os }}-buildkit_state-${{ github.sha }}
-  cache-restore-key:
+  cache-restore-keys:
     description: Github cache restore key.
     required: true
     default: |

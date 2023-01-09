@@ -97828,7 +97828,7 @@ function run() {
                 yield exec.exec('docker', ['buildx', 'stop']);
             }));
             const cacheExists = yield core.group('Fetching Github cache', () => __awaiter(this, void 0, void 0, function* () {
-                const cacheRestoreKeys = core.getMultilineInput('cache-restore-key');
+                const cacheRestoreKeys = core.getMultilineInput('cache-restore-keys');
                 const cacheKey = core.getInput('cache-key');
                 core.info(`fetching github cache using key ${cacheKey}...`);
                 const restoredCacheKey = yield cache.restoreCache([common_1.BUILDKIT_STATE_PATH], cacheKey, cacheRestoreKeys);
