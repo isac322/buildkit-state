@@ -97823,13 +97823,16 @@ const common_1 = __nccwpck_require__(9108);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            core.debug('post action started');
             const cacheKey = core.getInput('cache-key');
             const restoredCacheKey = core.getState(common_1.STATE_RESTORED_CACHE_KEY);
             if (restoredCacheKey == cacheKey) {
                 core.info('Cache key matched. Ignore cache saving.');
                 return;
             }
+            core.info('stopping buildx...');
             yield exec.exec('docker', ['buildx', 'stop']);
+            core.info('removing unwanted caches...');
             const targetTypes = core.getMultilineInput('target-types');
             yield Promise.all(common_1.STATE_TYPES.filter(type => targetTypes.indexOf(type) == -1).map(type => exec.exec('docker', [
                 'buildx',
@@ -97843,6 +97846,8 @@ function run() {
             const buildxContainerName = core.getInput('buildx-container-name');
             const docker = new dockerode_1.default();
             const container = docker.getContainer((0, common_1.getContainerName)({ buildxName, buildxContainerName }));
+            core.debug(`found container ${container.id}`);
+            core.info('fetching buildkit state from buildx container...');
             const outputStream = fs_1.default.createWriteStream(common_1.BUILDKIT_STATE_PATH, {
                 encoding: 'binary'
             });
@@ -97855,6 +97860,7 @@ function run() {
             });
             yield promiseExecute();
             outputStream.close();
+            core.info('saving buildkit state into Github cache...');
             yield cache.saveCache([common_1.BUILDKIT_STATE_PATH], cacheKey);
         }
         catch (error) {

@@ -12,6 +12,8 @@ import {
 
 export async function run() {
   try {
+    core.debug('post action started');
+
     const cacheKey = core.getInput('cache-key');
     const restoredCacheKey = core.getState(STATE_RESTORED_CACHE_KEY);
     if (restoredCacheKey == cacheKey) {
@@ -19,8 +21,10 @@ export async function run() {
       return;
     }
 
+    core.info('stopping buildx...');
     await exec.exec('docker', ['buildx', 'stop']);
 
+    core.info('removing unwanted caches...');
     const targetTypes = core.getMultilineInput('target-types');
     await Promise.all(
       STATE_TYPES.filter(type => targetTypes.indexOf(type) == -1).map(type =>
@@ -43,7 +47,9 @@ export async function run() {
     const container = docker.getContainer(
       getContainerName({buildxName, buildxContainerName})
     );
+    core.debug(`found container ${container.id}`);
 
+    core.info('fetching buildkit state from buildx container...');
     const outputStream = fs.createWriteStream(BUILDKIT_STATE_PATH, {
       encoding: 'binary'
     });
@@ -57,6 +63,7 @@ export async function run() {
     await promiseExecute();
     outputStream.close();
 
+    core.info('saving buildkit state into Github cache...');
     await cache.saveCache([BUILDKIT_STATE_PATH], cacheKey);
   } catch (error) {
     if (error instanceof Error) {
