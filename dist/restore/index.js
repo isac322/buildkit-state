@@ -97848,7 +97848,7 @@ function run() {
             yield core.group('Restoring buildkit state', () => __awaiter(this, void 0, void 0, function* () {
                 const docker = new dockerode_1.default();
                 const container = docker.getContainer((0, common_1.getContainerName)({ buildxName, buildxContainerName }));
-                core.debug(`found container ${container.id}`);
+                core.info(`found container ${container.id}`);
                 core.info('restoring buildkit state into buildx container...');
                 const stateStream = fs.createReadStream(common_1.BUILDKIT_STATE_PATH, {
                     encoding: 'binary'

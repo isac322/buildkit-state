@@ -49,7 +49,7 @@ async function run() {
       const container = docker.getContainer(
         getContainerName({buildxName, buildxContainerName})
       );
-      core.debug(`found container ${container.id}`);
+      core.info(`found container ${container.id}`);
 
       core.info('restoring buildkit state into buildx container...');
       const stateStream = fs.createReadStream(BUILDKIT_STATE_PATH, {
