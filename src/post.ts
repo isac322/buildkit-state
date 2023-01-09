@@ -21,9 +21,6 @@ async function run() {
       return;
     }
 
-    core.info('stopping buildx...');
-    await exec.exec('docker', ['buildx', 'stop']);
-
     core.info('removing unwanted caches...');
     const targetTypes = core.getMultilineInput('target-types');
     await Promise.all(
@@ -39,6 +36,9 @@ async function run() {
     );
 
     await exec.getExecOutput('docker', ['buildx', 'du', '--verbose']);
+
+    core.info('stopping buildx...');
+    await exec.exec('docker', ['buildx', 'stop']);
 
     const buildxName = core.getInput('buildx-name');
     const buildxContainerName = core.getInput('buildx-container-name');

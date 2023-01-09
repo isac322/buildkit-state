@@ -97822,32 +97822,40 @@ const common_1 = __nccwpck_require__(9108);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            core.debug('action started');
             const buildxName = core.getInput('buildx-name');
             const buildxContainerName = core.getInput('buildx-container-name');
             validateInputs({ buildxName, buildxContainerName });
-            core.info('stopping buildx...');
-            yield exec.exec('docker', ['buildx', 'stop']);
-            const cacheRestoreKeys = core.getMultilineInput('cache-restore-key');
-            const cacheKey = core.getInput('cache-key');
-            core.info(`fetching github cache using key ${cacheKey}...`);
-            const restoredCacheKey = yield cache.restoreCache([common_1.BUILDKIT_STATE_PATH], cacheKey, cacheRestoreKeys);
-            if (restoredCacheKey === undefined) {
-                core.info('Failed to fetch cache.');
+            yield core.group('Stopping buildx', () => __awaiter(this, void 0, void 0, function* () {
+                yield exec.exec('docker', ['buildx', 'stop']);
+            }));
+            const cacheExists = yield core.group('Fetching Github cache', () => __awaiter(this, void 0, void 0, function* () {
+                const cacheRestoreKeys = core.getMultilineInput('cache-restore-key');
+                const cacheKey = core.getInput('cache-key');
+                core.info(`fetching github cache using key ${cacheKey}...`);
+                const restoredCacheKey = yield cache.restoreCache([common_1.BUILDKIT_STATE_PATH], cacheKey, cacheRestoreKeys);
+                if (restoredCacheKey === undefined) {
+                    core.info('Cache does not exists.');
+                    return false;
+                }
+                core.info(`github cache restored. key: ${restoredCacheKey}`);
+                core.saveState(common_1.STATE_RESTORED_CACHE_KEY, restoredCacheKey);
+                return true;
+            }));
+            if (!cacheExists) {
+                core.info('Failed to fetch Github cache. Skip buildkit state restoring.');
                 return;
             }
-            core.info(`github cache restored. key: ${restoredCacheKey}`);
-            core.saveState(common_1.STATE_RESTORED_CACHE_KEY, restoredCacheKey);
-            const docker = new dockerode_1.default();
-            const container = docker.getContainer((0, common_1.getContainerName)({ buildxName, buildxContainerName }));
-            core.debug(`found container ${container.id}`);
-            core.info('restoring buildkit state into buildx container...');
-            const stateStream = fs.createReadStream(common_1.BUILDKIT_STATE_PATH, {
-                encoding: 'binary'
-            });
-            yield container.putArchive(stateStream, { path: '/var/lib/' });
-            stateStream.close();
-            core.info('restoring finished.');
+            yield core.group('Restoring buildkit state', () => __awaiter(this, void 0, void 0, function* () {
+                const docker = new dockerode_1.default();
+                const container = docker.getContainer((0, common_1.getContainerName)({ buildxName, buildxContainerName }));
+                core.debug(`found container ${container.id}`);
+                core.info('restoring buildkit state into buildx container...');
+                const stateStream = fs.createReadStream(common_1.BUILDKIT_STATE_PATH, {
+                    encoding: 'binary'
+                });
+                yield container.putArchive(stateStream, { path: '/var/lib/' });
+                stateStream.close();
+            }));
         }
         catch (error) {
             if (error instanceof Error) {

@@ -12,46 +12,52 @@ import {
 
 async function run() {
   try {
-    core.debug('action started');
-
     const buildxName = core.getInput('buildx-name');
     const buildxContainerName = core.getInput('buildx-container-name');
 
     validateInputs({buildxName, buildxContainerName});
 
-    core.info('stopping buildx...');
-    await exec.exec('docker', ['buildx', 'stop']);
+    await core.group('Stopping buildx', async () => {
+      await exec.exec('docker', ['buildx', 'stop']);
+    });
 
-    const cacheRestoreKeys = core.getMultilineInput('cache-restore-key');
-    const cacheKey = core.getInput('cache-key');
+    const cacheExists = await core.group('Fetching Github cache', async () => {
+      const cacheRestoreKeys = core.getMultilineInput('cache-restore-key');
+      const cacheKey = core.getInput('cache-key');
 
-    core.info(`fetching github cache using key ${cacheKey}...`);
-    const restoredCacheKey = await cache.restoreCache(
-      [BUILDKIT_STATE_PATH],
-      cacheKey,
-      cacheRestoreKeys
-    );
-    if (restoredCacheKey === undefined) {
-      core.info('Failed to fetch cache.');
+      core.info(`fetching github cache using key ${cacheKey}...`);
+      const restoredCacheKey = await cache.restoreCache(
+        [BUILDKIT_STATE_PATH],
+        cacheKey,
+        cacheRestoreKeys
+      );
+      if (restoredCacheKey === undefined) {
+        core.info('Cache does not exists.');
+        return false;
+      }
+      core.info(`github cache restored. key: ${restoredCacheKey}`);
+      core.saveState(STATE_RESTORED_CACHE_KEY, restoredCacheKey);
+      return true;
+    });
+    if (!cacheExists) {
+      core.info('Failed to fetch Github cache. Skip buildkit state restoring.');
       return;
     }
-    core.info(`github cache restored. key: ${restoredCacheKey}`);
-    core.saveState(STATE_RESTORED_CACHE_KEY, restoredCacheKey);
 
-    const docker = new Docskerode();
-    const container = docker.getContainer(
-      getContainerName({buildxName, buildxContainerName})
-    );
-    core.debug(`found container ${container.id}`);
+    await core.group('Restoring buildkit state', async () => {
+      const docker = new Docskerode();
+      const container = docker.getContainer(
+        getContainerName({buildxName, buildxContainerName})
+      );
+      core.debug(`found container ${container.id}`);
 
-    core.info('restoring buildkit state into buildx container...');
-    const stateStream = fs.createReadStream(BUILDKIT_STATE_PATH, {
-      encoding: 'binary'
+      core.info('restoring buildkit state into buildx container...');
+      const stateStream = fs.createReadStream(BUILDKIT_STATE_PATH, {
+        encoding: 'binary'
+      });
+      await container.putArchive(stateStream, {path: '/var/lib/'});
+      stateStream.close();
     });
-    await container.putArchive(stateStream, {path: '/var/lib/'});
-    stateStream.close();
-
-    core.info('restoring finished.');
   } catch (error) {
     if (error instanceof Error) {
       core.setFailed(error.message);

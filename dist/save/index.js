@@ -97829,8 +97829,6 @@ function run() {
                 core.info('Cache key matched. Ignore cache saving.');
                 return;
             }
-            core.info('stopping buildx...');
-            yield exec.exec('docker', ['buildx', 'stop']);
             core.info('removing unwanted caches...');
             const targetTypes = core.getMultilineInput('target-types');
             yield Promise.all(common_1.STATE_TYPES.filter(type => targetTypes.indexOf(type) == -1).map(type => exec.exec('docker', [
@@ -97841,6 +97839,8 @@ function run() {
                 `type=${type}`
             ])));
             yield exec.getExecOutput('docker', ['buildx', 'du', '--verbose']);
+            core.info('stopping buildx...');
+            yield exec.exec('docker', ['buildx', 'stop']);
             const buildxName = core.getInput('buildx-name');
             const buildxContainerName = core.getInput('buildx-container-name');
             const docker = new dockerode_1.default();
