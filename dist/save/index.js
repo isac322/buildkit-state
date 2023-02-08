@@ -49080,7 +49080,7 @@ var isArray = Array.isArray || function (xs) {
 "use strict";
 
 
-const binding = __nccwpck_require__(5653);
+const binding = __nccwpck_require__(4240);
 
 module.exports = binding.getCPUInfo;
 
@@ -76513,7 +76513,7 @@ let AESGCMDecipher;
 let ChaChaPolyDecipher;
 let GenericDecipher;
 try {
-  binding = __nccwpck_require__(9623);
+  binding = __nccwpck_require__(9041);
   ({ AESGCMCipher, ChaChaPolyCipher, GenericCipher,
      AESGCMDecipher, ChaChaPolyDecipher, GenericDecipher } = binding);
 } catch {}
@@ -97888,19 +97888,17 @@ run();
 
 /***/ }),
 
-/***/ 5653:
-/***/ ((module) => {
+/***/ 4240:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-module.exports = eval("require")("../build/Release/cpufeatures.node");
-
+module.exports = require(__nccwpck_require__.ab + "build/Release/cpufeatures.node")
 
 /***/ }),
 
-/***/ 9623:
-/***/ ((module) => {
+/***/ 9041:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-module.exports = eval("require")("./crypto/build/Release/sshcrypto.node");
-
+module.exports = require(__nccwpck_require__.ab + "lib/protocol/crypto/build/Release/sshcrypto.node")
 
 /***/ }),
 
