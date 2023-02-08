@@ -37,7 +37,7 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - name: Restore buildkit state
-        uses: isac322/builtkit-state@v1
+        uses: isac322/buildkit-state@v1
         with:
           buildx-name: ${{ steps.buildx.outputs.name }}
 
@@ -73,7 +73,7 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - name: Restore buildkit state
-        uses: isac322/builtkit-state@v1
+        uses: isac322/buildkit-state@v1
         with:
           buildx-name: ${{ steps.buildx.outputs.name }}
           cache-key: ${{ runner.os }}-buildkit_state-${{ steps.version.outputs.version }}
