@@ -12,7 +12,7 @@
     "package": "ncc build -s -o dist/restore src/main.ts --license license.txt && ncc build -s -o dist/save src/post.ts --license license.txt",
     "test": "jest",
     "all": "npm run build && npm run format && npm run lint && npm run package && npm test",
-    "compile-on-docker": "docker run --rm -ti -v $(pwd):/app:ro -v $(pwd)/dist:/app/dist -v $(mktemp -d):/app/node_modules -v $(mktemp -d):/app/lib --workdir /app node:16 bash -ceux 'npm ci --ignore-script && npm exec -- tsc && npm exec -- ncc build -s -o dist/restore src/main.ts --license license.txt && npm exec -- ncc build -s -o dist/save src/post.ts --license license.txt'"
+    "compile-on-docker": "docker run --rm -ti -v $(pwd):/app:ro -v $(pwd)/dist:/app/dist -v $(mktemp -d):/app/node_modules -v $(mktemp -d):/app/lib --workdir /app node:16 bash -ceux 'npm ci && npm exec -- tsc && npm exec -- ncc build -s -o dist/restore src/main.ts --license license.txt && npm exec -- ncc build -s -o dist/save src/post.ts --license license.txt'"
   },
   "repository": {
     "type": "git",
