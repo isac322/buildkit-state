@@ -43,8 +43,6 @@ async function run(): Promise<void> {
       }
       core.info(`Found location of buildkit state: ${stateMount.Source}`)
       core.saveState(STATE_BUILDKIT_STATE_PATH_KEY, stateMount.Source)
-      await io.rmRF(stateMount.Source)
-      await io.mkdirP(stateMount.Source)
     })
 
     await core.group('Fetching Github cache', async () => {

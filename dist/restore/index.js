@@ -94906,8 +94906,6 @@ function run() {
                 }
                 core.info(`Found location of buildkit state: ${stateMount.Source}`);
                 core.saveState(common_1.STATE_BUILDKIT_STATE_PATH_KEY, stateMount.Source);
-                yield io.rmRF(stateMount.Source);
-                yield io.mkdirP(stateMount.Source);
             }));
             yield core.group('Fetching Github cache', () => __awaiter(this, void 0, void 0, function* () {
                 const cacheRestoreKeys = core.getMultilineInput('cache-restore-keys');
