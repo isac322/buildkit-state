@@ -45,6 +45,7 @@ async function run(): Promise<void> {
     })
 
     await core.group('Upload into Github cache', async () => {
+      await io.mkdirP(BUILDKIT_STATE_PATH)
       if (core.isDebug()) {
         core.debug('content of buildkit state')
         await exec.exec('ls', ['-ahl', BUILDKIT_STATE_PATH])
