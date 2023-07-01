@@ -43,6 +43,10 @@ async function run(): Promise<void> {
     })
 
     await core.group('Upload into Github cache', async () => {
+      if (core.isDebug()) {
+        core.debug('content of buildkit state')
+        await exec.exec('ls', ['-ahl', BUILDKIT_STATE_PATH])
+      }
       await cache.saveCache([BUILDKIT_STATE_PATH], cacheKey)
     })
   } catch (error) {

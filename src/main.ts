@@ -48,7 +48,15 @@ async function run(): Promise<void> {
         BUILDKIT_STATE_PATH,
         'dir'
       )
+      if (core.isDebug()) {
+        core.debug('after symbolic linking')
+        await exec.exec('ls', ['-ahl', BUILDKIT_STATE_PATH])
+      }
       await io.rmRF(stateMount.Source)
+      if (core.isDebug()) {
+        core.debug('after cleanup existing buildkit state')
+        await exec.exec('ls', ['-ahl', BUILDKIT_STATE_PATH])
+      }
     })
 
     await core.group('Fetching Github cache', async () => {

@@ -94908,7 +94908,15 @@ function run() {
                 core.debug(`Symlink ${path_1.default.dirname(stateMount.Source)} to ${common_1.BUILDKIT_STATE_PATH}`);
                 yield io.mkdirP(path_1.default.dirname(common_1.BUILDKIT_STATE_PATH));
                 yield promises_1.default.symlink(path_1.default.dirname(stateMount.Source), common_1.BUILDKIT_STATE_PATH, 'dir');
+                if (core.isDebug()) {
+                    core.debug('after symbolic linking');
+                    yield exec.exec('ls', ['-ahl', common_1.BUILDKIT_STATE_PATH]);
+                }
                 yield io.rmRF(stateMount.Source);
+                if (core.isDebug()) {
+                    core.debug('after cleanup existing buildkit state');
+                    yield exec.exec('ls', ['-ahl', common_1.BUILDKIT_STATE_PATH]);
+                }
             }));
             yield core.group('Fetching Github cache', () => __awaiter(this, void 0, void 0, function* () {
                 const cacheRestoreKeys = core.getMultilineInput('cache-restore-keys');

@@ -58621,6 +58621,10 @@ function run() {
                 yield exec.exec('docker', ['buildx', 'stop', buildxName]);
             }));
             yield core.group('Upload into Github cache', () => __awaiter(this, void 0, void 0, function* () {
+                if (core.isDebug()) {
+                    core.debug('content of buildkit state');
+                    yield exec.exec('ls', ['-ahl', common_1.BUILDKIT_STATE_PATH]);
+                }
                 yield cache.saveCache([common_1.BUILDKIT_STATE_PATH], cacheKey);
             }));
         }
