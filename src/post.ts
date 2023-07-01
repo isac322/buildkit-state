@@ -3,9 +3,11 @@ import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 import {
   BUILDKIT_STATE_PATH,
+  STATE_BUILDKIT_STATE_PATH_KEY,
   STATE_RESTORED_CACHE_KEY,
   STATE_TYPES
 } from './common'
+import * as io from '@actions/io'
 
 async function run(): Promise<void> {
   try {
@@ -47,6 +49,10 @@ async function run(): Promise<void> {
         core.debug('content of buildkit state')
         await exec.exec('ls', ['-ahl', BUILDKIT_STATE_PATH])
       }
+      const statePath = core.getState(STATE_BUILDKIT_STATE_PATH_KEY)
+      await io.rmRF(BUILDKIT_STATE_PATH)
+      await io.mkdirP(BUILDKIT_STATE_PATH)
+      await io.mv(statePath, BUILDKIT_STATE_PATH, {force: true})
       await cache.saveCache([BUILDKIT_STATE_PATH], cacheKey)
     })
   } catch (error) {

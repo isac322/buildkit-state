@@ -58534,9 +58534,10 @@ module.exports.implForWrapper = function (wrapper) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.STATE_TYPES = exports.STATE_RESTORED_CACHE_KEY = exports.BUILDKIT_STATE_PATH = void 0;
+exports.STATE_TYPES = exports.STATE_BUILDKIT_STATE_PATH_KEY = exports.STATE_RESTORED_CACHE_KEY = exports.BUILDKIT_STATE_PATH = void 0;
 exports.BUILDKIT_STATE_PATH = '/tmp/buildkit-cache';
 exports.STATE_RESTORED_CACHE_KEY = 'restored-cache-key';
+exports.STATE_BUILDKIT_STATE_PATH_KEY = 'buildkit-state-path-key';
 exports.STATE_TYPES = [
     'regular',
     'source.local',
@@ -58591,6 +58592,7 @@ const cache = __importStar(__nccwpck_require__(7799));
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
 const common_1 = __nccwpck_require__(9108);
+const io = __importStar(__nccwpck_require__(7436));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -58625,6 +58627,10 @@ function run() {
                     core.debug('content of buildkit state');
                     yield exec.exec('ls', ['-ahl', common_1.BUILDKIT_STATE_PATH]);
                 }
+                const statePath = core.getState(common_1.STATE_BUILDKIT_STATE_PATH_KEY);
+                yield io.rmRF(common_1.BUILDKIT_STATE_PATH);
+                yield io.mkdirP(common_1.BUILDKIT_STATE_PATH);
+                yield io.mv(statePath, common_1.BUILDKIT_STATE_PATH, { force: true });
                 yield cache.saveCache([common_1.BUILDKIT_STATE_PATH], cacheKey);
             }));
         }

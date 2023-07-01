@@ -94813,9 +94813,10 @@ function wrappy (fn, cb) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.STATE_TYPES = exports.STATE_RESTORED_CACHE_KEY = exports.BUILDKIT_STATE_PATH = void 0;
+exports.STATE_TYPES = exports.STATE_BUILDKIT_STATE_PATH_KEY = exports.STATE_RESTORED_CACHE_KEY = exports.BUILDKIT_STATE_PATH = void 0;
 exports.BUILDKIT_STATE_PATH = '/tmp/buildkit-cache';
 exports.STATE_RESTORED_CACHE_KEY = 'restored-cache-key';
+exports.STATE_BUILDKIT_STATE_PATH_KEY = 'buildkit-state-path-key';
 exports.STATE_TYPES = [
     'regular',
     'source.local',
@@ -94873,10 +94874,8 @@ const cache = __importStar(__nccwpck_require__(7799));
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
 const io = __importStar(__nccwpck_require__(7436));
-const promises_1 = __importDefault(__nccwpck_require__(3292));
 const dockerode_1 = __importDefault(__nccwpck_require__(4571));
 const common_1 = __nccwpck_require__(9108);
-const path_1 = __importDefault(__nccwpck_require__(1017));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const buildxName = core.getInput('buildx-name');
@@ -94905,18 +94904,8 @@ function run() {
                     throw new Error(`failed to find volume: ${volumeName}`);
                 }
                 core.info(`Found location of buildkit state: ${stateMount.Source}`);
-                core.debug(`Symlink ${path_1.default.dirname(stateMount.Source)} to ${common_1.BUILDKIT_STATE_PATH}`);
-                yield io.mkdirP(common_1.BUILDKIT_STATE_PATH);
-                yield promises_1.default.symlink(stateMount.Source, path_1.default.join(common_1.BUILDKIT_STATE_PATH, path_1.default.basename(stateMount.Source)), 'dir');
-                if (core.isDebug()) {
-                    core.debug('after symbolic linking');
-                    yield exec.exec('ls', ['-ahl', common_1.BUILDKIT_STATE_PATH]);
-                }
+                core.saveState(common_1.STATE_BUILDKIT_STATE_PATH_KEY, stateMount.Source);
                 yield io.rmRF(stateMount.Source);
-                if (core.isDebug()) {
-                    core.debug('after cleanup existing buildkit state');
-                    yield exec.exec('ls', ['-ahl', common_1.BUILDKIT_STATE_PATH]);
-                }
             }));
             yield core.group('Fetching Github cache', () => __awaiter(this, void 0, void 0, function* () {
                 const cacheRestoreKeys = core.getMultilineInput('cache-restore-keys');
@@ -94929,6 +94918,8 @@ function run() {
                 }
                 core.info(`github cache restored. key: ${restoredCacheKey}`);
                 core.saveState(common_1.STATE_RESTORED_CACHE_KEY, restoredCacheKey);
+                const statePath = core.getState(common_1.STATE_BUILDKIT_STATE_PATH_KEY);
+                yield io.mv(common_1.BUILDKIT_STATE_PATH, statePath, { force: true });
             }));
         }
         catch (error) {
@@ -95031,14 +95022,6 @@ module.exports = require("events");
 
 "use strict";
 module.exports = require("fs");
-
-/***/ }),
-
-/***/ 3292:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("fs/promises");
 
 /***/ }),
 

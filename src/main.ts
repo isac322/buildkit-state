@@ -4,7 +4,11 @@ import * as exec from '@actions/exec'
 import * as io from '@actions/io'
 import fsPromise from 'fs/promises'
 import Docskerode from 'dockerode'
-import {BUILDKIT_STATE_PATH, STATE_RESTORED_CACHE_KEY} from './common'
+import {
+  BUILDKIT_STATE_PATH,
+  STATE_BUILDKIT_STATE_PATH_KEY,
+  STATE_RESTORED_CACHE_KEY
+} from './common'
 import path from 'path'
 
 async function run(): Promise<void> {
@@ -38,25 +42,8 @@ async function run(): Promise<void> {
         throw new Error(`failed to find volume: ${volumeName}`)
       }
       core.info(`Found location of buildkit state: ${stateMount.Source}`)
-
-      core.debug(
-        `Symlink ${path.dirname(stateMount.Source)} to ${BUILDKIT_STATE_PATH}`
-      )
-      await io.mkdirP(BUILDKIT_STATE_PATH)
-      await fsPromise.symlink(
-        stateMount.Source,
-        path.join(BUILDKIT_STATE_PATH, path.basename(stateMount.Source)),
-        'dir'
-      )
-      if (core.isDebug()) {
-        core.debug('after symbolic linking')
-        await exec.exec('ls', ['-ahl', BUILDKIT_STATE_PATH])
-      }
+      core.saveState(STATE_BUILDKIT_STATE_PATH_KEY, stateMount.Source)
       await io.rmRF(stateMount.Source)
-      if (core.isDebug()) {
-        core.debug('after cleanup existing buildkit state')
-        await exec.exec('ls', ['-ahl', BUILDKIT_STATE_PATH])
-      }
     })
 
     await core.group('Fetching Github cache', async () => {
@@ -77,6 +64,9 @@ async function run(): Promise<void> {
       }
       core.info(`github cache restored. key: ${restoredCacheKey}`)
       core.saveState(STATE_RESTORED_CACHE_KEY, restoredCacheKey)
+
+      const statePath = core.getState(STATE_BUILDKIT_STATE_PATH_KEY)
+      await io.mv(BUILDKIT_STATE_PATH, statePath, {force: true})
     })
   } catch (error) {
     if (error instanceof Error) {
