@@ -94876,6 +94876,7 @@ const exec = __importStar(__nccwpck_require__(1514));
 const io = __importStar(__nccwpck_require__(7436));
 const dockerode_1 = __importDefault(__nccwpck_require__(4571));
 const common_1 = __nccwpck_require__(9108);
+const path_1 = __importDefault(__nccwpck_require__(1017));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const buildxName = core.getInput('buildx-name');
@@ -94906,6 +94907,7 @@ function run() {
                 core.info(`Found location of buildkit state: ${stateMount.Source}`);
                 core.saveState(common_1.STATE_BUILDKIT_STATE_PATH_KEY, stateMount.Source);
                 yield io.rmRF(stateMount.Source);
+                yield io.mkdirP(stateMount.Source);
             }));
             yield core.group('Fetching Github cache', () => __awaiter(this, void 0, void 0, function* () {
                 const cacheRestoreKeys = core.getMultilineInput('cache-restore-keys');
@@ -94919,7 +94921,7 @@ function run() {
                 core.info(`github cache restored. key: ${restoredCacheKey}`);
                 core.saveState(common_1.STATE_RESTORED_CACHE_KEY, restoredCacheKey);
                 const statePath = core.getState(common_1.STATE_BUILDKIT_STATE_PATH_KEY);
-                yield io.mv(common_1.BUILDKIT_STATE_PATH, statePath, { force: true });
+                yield io.mv(path_1.default.join(common_1.BUILDKIT_STATE_PATH, path_1.default.basename(statePath)), path_1.default.dirname(statePath), { force: true });
             }));
         }
         catch (error) {

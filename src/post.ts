@@ -45,15 +45,14 @@ async function run(): Promise<void> {
     })
 
     await core.group('Upload into Github cache', async () => {
-      await io.mkdirP(BUILDKIT_STATE_PATH)
+      const statePath = core.getState(STATE_BUILDKIT_STATE_PATH_KEY)
       if (core.isDebug()) {
         core.debug('content of buildkit state')
-        await exec.exec('ls', ['-ahl', BUILDKIT_STATE_PATH])
+        await exec.exec('ls', ['-ahl', statePath])
       }
-      const statePath = core.getState(STATE_BUILDKIT_STATE_PATH_KEY)
       await io.rmRF(BUILDKIT_STATE_PATH)
       await io.mkdirP(BUILDKIT_STATE_PATH)
-      await io.mv(statePath, BUILDKIT_STATE_PATH, {force: true})
+      await io.mv(statePath, BUILDKIT_STATE_PATH)
       await cache.saveCache([BUILDKIT_STATE_PATH], cacheKey)
     })
   } catch (error) {

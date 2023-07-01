@@ -58623,15 +58623,14 @@ function run() {
                 yield exec.exec('docker', ['buildx', 'stop', buildxName]);
             }));
             yield core.group('Upload into Github cache', () => __awaiter(this, void 0, void 0, function* () {
-                yield io.mkdirP(common_1.BUILDKIT_STATE_PATH);
+                const statePath = core.getState(common_1.STATE_BUILDKIT_STATE_PATH_KEY);
                 if (core.isDebug()) {
                     core.debug('content of buildkit state');
-                    yield exec.exec('ls', ['-ahl', common_1.BUILDKIT_STATE_PATH]);
+                    yield exec.exec('ls', ['-ahl', statePath]);
                 }
-                const statePath = core.getState(common_1.STATE_BUILDKIT_STATE_PATH_KEY);
                 yield io.rmRF(common_1.BUILDKIT_STATE_PATH);
                 yield io.mkdirP(common_1.BUILDKIT_STATE_PATH);
-                yield io.mv(statePath, common_1.BUILDKIT_STATE_PATH, { force: true });
+                yield io.mv(statePath, common_1.BUILDKIT_STATE_PATH);
                 yield cache.saveCache([common_1.BUILDKIT_STATE_PATH], cacheKey);
             }));
         }
