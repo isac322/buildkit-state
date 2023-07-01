@@ -28,7 +28,7 @@ async function run(): Promise<void> {
       const container = docker.getContainer(containerName)
       core.info(`found container ${container.id}`)
 
-      const volumeName = `buildx_buildkit_${containerName}_state`
+      const volumeName = `${containerName}_state`
       const containerInfo = await container.inspect()
       core.debug(JSON.stringify(containerInfo))
 
