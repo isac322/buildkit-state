@@ -94896,7 +94896,7 @@ function run() {
                 const docker = new dockerode_1.default();
                 const container = docker.getContainer(containerName);
                 core.info(`found container ${container.id}`);
-                const volumeName = `buildx_buildkit_${containerName}_state`;
+                const volumeName = `${containerName}_state`;
                 const containerInfo = yield container.inspect();
                 core.debug(JSON.stringify(containerInfo));
                 core.debug(`looking for volume name: ${volumeName}`);
