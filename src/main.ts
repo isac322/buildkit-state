@@ -1,26 +1,57 @@
 import * as cache from '@actions/cache'
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
+import * as io from '@actions/io'
+import fsPromise from 'fs/promises'
 import Docskerode from 'dockerode'
-import {
-  BUILDKIT_STATE_PATH,
-  Inputs,
-  STATE_RESTORED_CACHE_KEY,
-  getContainerName
-} from './common'
+import {BUILDKIT_STATE_PATH, STATE_RESTORED_CACHE_KEY} from './common'
+import path from 'path'
 
 async function run(): Promise<void> {
+  const buildxName = core.getInput('buildx-name')
+  const containerName = `buildx_buildkit_${buildxName}0`
+  core.debug(`container name: ${containerName}`)
+
   try {
-    const buildxName = core.getInput('buildx-name')
-    const buildxContainerName = core.getInput('buildx-container-name')
-
-    validateInputs({buildxName, buildxContainerName})
-
     await core.group('Stopping buildx', async () => {
-      await exec.exec('docker', ['buildx', 'stop'])
+      await exec.exec('docker', [
+        'buildx',
+        'inspect',
+        buildxName,
+        '--bootstrap'
+      ])
+      await exec.exec('docker', ['buildx', 'stop', buildxName])
     })
 
-    const cacheExists = await core.group('Fetching Github cache', async () => {
+    await core.group('Locate buildkit state', async () => {
+      const docker = new Docskerode()
+      const container = docker.getContainer(containerName)
+      core.info(`found container ${container.id}`)
+
+      const volumeName = `buildx_buildkit_${containerName}_state`
+      const containerInfo = await container.inspect()
+      core.debug(JSON.stringify(containerInfo))
+
+      core.debug(`looking for volume name: ${volumeName}`)
+      const stateMount = containerInfo.Mounts.find(m => m.Name === volumeName)
+      if (stateMount === undefined) {
+        throw new Error(`failed to find volume: ${volumeName}`)
+      }
+      core.info(`Found location of buildkit state: ${stateMount.Source}`)
+
+      core.debug(
+        `Symlink ${path.dirname(stateMount.Source)} to ${BUILDKIT_STATE_PATH}`
+      )
+      await io.mkdirP(path.dirname(BUILDKIT_STATE_PATH))
+      await fsPromise.symlink(
+        path.dirname(stateMount.Source),
+        BUILDKIT_STATE_PATH,
+        'dir'
+      )
+      await io.rmRF(stateMount.Source)
+    })
+
+    await core.group('Fetching Github cache', async () => {
       const cacheRestoreKeys = core.getMultilineInput('cache-restore-keys')
       const cacheKey = core.getInput('cache-key')
 
@@ -31,31 +62,13 @@ async function run(): Promise<void> {
         cacheRestoreKeys
       )
       if (restoredCacheKey === undefined) {
-        core.info('Cache does not exists.')
-        return false
+        core.info(
+          'Failed to fetch Github cache. Skip buildkit state restoring.'
+        )
+        return
       }
       core.info(`github cache restored. key: ${restoredCacheKey}`)
       core.saveState(STATE_RESTORED_CACHE_KEY, restoredCacheKey)
-      return true
-    })
-    if (!cacheExists) {
-      core.info('Failed to fetch Github cache. Skip buildkit state restoring.')
-      return
-    }
-
-    if (core.isDebug()) {
-      await core.group('Listing Github cache', async () => {})
-    }
-
-    await core.group('Restoring buildkit state', async () => {
-      const docker = new Docskerode()
-      const container = docker.getContainer(
-        getContainerName({buildxName, buildxContainerName})
-      )
-      core.info(`found container ${container.id}`)
-
-      core.info('restoring buildkit state into buildx container...')
-      await container.putArchive(BUILDKIT_STATE_PATH, {path: '/var/lib/'})
     })
   } catch (error) {
     if (error instanceof Error) {
@@ -63,14 +76,8 @@ async function run(): Promise<void> {
     }
   } finally {
     core.info('restarting buildx...')
-    await exec.exec('docker', ['buildx', 'inspect', '--bootstrap'])
+    await exec.exec('docker', ['buildx', 'inspect', buildxName, '--bootstrap'])
     await exec.exec('docker', ['buildx', 'du', '--verbose'])
-  }
-}
-
-function validateInputs(opts: Inputs): void {
-  if (opts.buildxContainerName === '' && opts.buildxName === '') {
-    throw new Error('buildx-name or buildx-container-name must be set')
   }
 }
 

@@ -94813,25 +94813,17 @@ function wrappy (fn, cb) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getContainerName = exports.STATE_TYPES = exports.STATE_RESTORED_CACHE_KEY = exports.BUILDKIT_STATE_PATH = void 0;
-exports.BUILDKIT_STATE_PATH = '/tmp/buildkit-cache/buildkit-state.tar';
+exports.STATE_TYPES = exports.STATE_RESTORED_CACHE_KEY = exports.BUILDKIT_STATE_PATH = void 0;
+exports.BUILDKIT_STATE_PATH = '/tmp/buildkit-cache';
 exports.STATE_RESTORED_CACHE_KEY = 'restored-cache-key';
 exports.STATE_TYPES = [
     'regular',
     'source.local',
+    'source.git.checkout',
     'exec.cachemount',
     'frontend',
     'internal'
 ];
-function getContainerName(opts) {
-    if (opts.buildxContainerName !== '') {
-        return opts.buildxContainerName;
-    }
-    else {
-        return `buildx_buildkit_${opts.buildxName}0`;
-    }
-}
-exports.getContainerName = getContainerName;
 
 
 /***/ }),
@@ -94880,43 +94872,55 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const cache = __importStar(__nccwpck_require__(7799));
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
+const io = __importStar(__nccwpck_require__(7436));
+const promises_1 = __importDefault(__nccwpck_require__(3292));
 const dockerode_1 = __importDefault(__nccwpck_require__(4571));
 const common_1 = __nccwpck_require__(9108);
+const path_1 = __importDefault(__nccwpck_require__(1017));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
+        const buildxName = core.getInput('buildx-name');
+        const containerName = `buildx_buildkit_${buildxName}0`;
+        core.debug(`container name: ${containerName}`);
         try {
-            const buildxName = core.getInput('buildx-name');
-            const buildxContainerName = core.getInput('buildx-container-name');
-            validateInputs({ buildxName, buildxContainerName });
             yield core.group('Stopping buildx', () => __awaiter(this, void 0, void 0, function* () {
-                yield exec.exec('docker', ['buildx', 'stop']);
+                yield exec.exec('docker', [
+                    'buildx',
+                    'inspect',
+                    buildxName,
+                    '--bootstrap'
+                ]);
+                yield exec.exec('docker', ['buildx', 'stop', buildxName]);
             }));
-            const cacheExists = yield core.group('Fetching Github cache', () => __awaiter(this, void 0, void 0, function* () {
+            yield core.group('Locate buildkit state', () => __awaiter(this, void 0, void 0, function* () {
+                const docker = new dockerode_1.default();
+                const container = docker.getContainer(containerName);
+                core.info(`found container ${container.id}`);
+                const volumeName = `buildx_buildkit_${containerName}_state`;
+                const containerInfo = yield container.inspect();
+                core.debug(JSON.stringify(containerInfo));
+                core.debug(`looking for volume name: ${volumeName}`);
+                const stateMount = containerInfo.Mounts.find(m => m.Name === volumeName);
+                if (stateMount === undefined) {
+                    throw new Error(`failed to find volume: ${volumeName}`);
+                }
+                core.info(`Found location of buildkit state: ${stateMount.Source}`);
+                core.debug(`Symlink ${path_1.default.dirname(stateMount.Source)} to ${common_1.BUILDKIT_STATE_PATH}`);
+                yield io.mkdirP(path_1.default.dirname(common_1.BUILDKIT_STATE_PATH));
+                yield promises_1.default.symlink(path_1.default.dirname(stateMount.Source), common_1.BUILDKIT_STATE_PATH, 'dir');
+                yield io.rmRF(stateMount.Source);
+            }));
+            yield core.group('Fetching Github cache', () => __awaiter(this, void 0, void 0, function* () {
                 const cacheRestoreKeys = core.getMultilineInput('cache-restore-keys');
                 const cacheKey = core.getInput('cache-key');
                 core.info(`fetching github cache using key ${cacheKey}...`);
                 const restoredCacheKey = yield cache.restoreCache([common_1.BUILDKIT_STATE_PATH], cacheKey, cacheRestoreKeys);
                 if (restoredCacheKey === undefined) {
-                    core.info('Cache does not exists.');
-                    return false;
+                    core.info('Failed to fetch Github cache. Skip buildkit state restoring.');
+                    return;
                 }
                 core.info(`github cache restored. key: ${restoredCacheKey}`);
                 core.saveState(common_1.STATE_RESTORED_CACHE_KEY, restoredCacheKey);
-                return true;
-            }));
-            if (!cacheExists) {
-                core.info('Failed to fetch Github cache. Skip buildkit state restoring.');
-                return;
-            }
-            if (core.isDebug()) {
-                yield core.group('Listing Github cache', () => __awaiter(this, void 0, void 0, function* () { }));
-            }
-            yield core.group('Restoring buildkit state', () => __awaiter(this, void 0, void 0, function* () {
-                const docker = new dockerode_1.default();
-                const container = docker.getContainer((0, common_1.getContainerName)({ buildxName, buildxContainerName }));
-                core.info(`found container ${container.id}`);
-                core.info('restoring buildkit state into buildx container...');
-                yield container.putArchive(common_1.BUILDKIT_STATE_PATH, { path: '/var/lib/' });
             }));
         }
         catch (error) {
@@ -94926,15 +94930,10 @@ function run() {
         }
         finally {
             core.info('restarting buildx...');
-            yield exec.exec('docker', ['buildx', 'inspect', '--bootstrap']);
+            yield exec.exec('docker', ['buildx', 'inspect', buildxName, '--bootstrap']);
             yield exec.exec('docker', ['buildx', 'du', '--verbose']);
         }
     });
-}
-function validateInputs(opts) {
-    if (opts.buildxContainerName === '' && opts.buildxName === '') {
-        throw new Error('buildx-name or buildx-container-name must be set');
-    }
 }
 run();
 
@@ -95024,6 +95023,14 @@ module.exports = require("events");
 
 "use strict";
 module.exports = require("fs");
+
+/***/ }),
+
+/***/ 3292:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("fs/promises");
 
 /***/ }),
 

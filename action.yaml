@@ -2,11 +2,10 @@ name: "Buildkit state"
 description: Load and save buildkit state.
 inputs:
   buildx-name:
+    required: true
     description: |
       Name of buildx. Required if `buildx_container_name` is not given.
       Fill as `name` output of `docker/setup-buildx-action` actions.
-  buildx-container-name:
-    description: Name of buildx container. Required if `buildx_name` is not given.
   cache-key:
     description: Github cache key.
     required: true
@@ -17,11 +16,14 @@ inputs:
     default: |
       ${{ runner.os }}-buildkit_state-
   target-types:
-    description: '`regular` | `source.local` | `exec.cachemount` | `frontend` | `internal`'
+    description: '`regular` | `source.local` | `source.git.checkout` | `exec.cachemount` | `frontend` | `internal`'
     default: |
       exec.cachemount
       frontend
     required: true
+  rewrite-cache:
+    description: Whether to overwrite when the same cache key already exists
+    default: "false"
 
 runs:
   using: node16
