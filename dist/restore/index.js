@@ -94906,8 +94906,8 @@ function run() {
                 }
                 core.info(`Found location of buildkit state: ${stateMount.Source}`);
                 core.debug(`Symlink ${path_1.default.dirname(stateMount.Source)} to ${common_1.BUILDKIT_STATE_PATH}`);
-                yield io.mkdirP(path_1.default.dirname(common_1.BUILDKIT_STATE_PATH));
-                yield promises_1.default.symlink(path_1.default.dirname(stateMount.Source), common_1.BUILDKIT_STATE_PATH, 'dir');
+                yield io.mkdirP(common_1.BUILDKIT_STATE_PATH);
+                yield promises_1.default.symlink(stateMount.Source, path_1.default.join(common_1.BUILDKIT_STATE_PATH, path_1.default.basename(stateMount.Source)), 'dir');
                 if (core.isDebug()) {
                     core.debug('after symbolic linking');
                     yield exec.exec('ls', ['-ahl', common_1.BUILDKIT_STATE_PATH]);

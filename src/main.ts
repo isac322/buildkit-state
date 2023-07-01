@@ -42,10 +42,10 @@ async function run(): Promise<void> {
       core.debug(
         `Symlink ${path.dirname(stateMount.Source)} to ${BUILDKIT_STATE_PATH}`
       )
-      await io.mkdirP(path.dirname(BUILDKIT_STATE_PATH))
+      await io.mkdirP(BUILDKIT_STATE_PATH)
       await fsPromise.symlink(
-        path.dirname(stateMount.Source),
-        BUILDKIT_STATE_PATH,
+        stateMount.Source,
+        path.join(BUILDKIT_STATE_PATH, path.basename(stateMount.Source)),
         'dir'
       )
       if (core.isDebug()) {
