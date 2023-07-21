@@ -61556,7 +61556,7 @@ function run() {
                 core.info('Cache key matched. Ignore cache saving.');
                 return;
             }
-            core.info(JSON.parse(github.context.job));
+            core.info(JSON.stringify(github.context));
             yield core.group('Removing unwanted caches', () => __awaiter(this, void 0, void 0, function* () {
                 const targetTypes = core.getMultilineInput('target-types');
                 yield Promise.all(common_1.STATE_TYPES.filter(type => !targetTypes.includes(type)).map((type) => __awaiter(this, void 0, void 0, function* () {

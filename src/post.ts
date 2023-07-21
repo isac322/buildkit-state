@@ -19,7 +19,7 @@ async function run(): Promise<void> {
       core.info('Cache key matched. Ignore cache saving.')
       return
     }
-    core.info(JSON.parse(github.context.job))
+    core.info(JSON.stringify(github.context))
 
     await core.group('Removing unwanted caches', async () => {
       const targetTypes = core.getMultilineInput('target-types')
