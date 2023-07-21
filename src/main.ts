@@ -14,6 +14,7 @@ async function run(): Promise<void> {
   const buildxName = core.getInput('buildx-name')
   const containerName = `buildx_buildkit_${buildxName}0`
   core.debug(`container name: ${containerName}`)
+  core.info(process.env.npm_package_version ?? "empty-version")
 
   try {
     await core.group('Stopping buildx', async () => {

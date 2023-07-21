@@ -94878,10 +94878,12 @@ const dockerode_1 = __importDefault(__nccwpck_require__(4571));
 const common_1 = __nccwpck_require__(9108);
 const path_1 = __importDefault(__nccwpck_require__(1017));
 function run() {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         const buildxName = core.getInput('buildx-name');
         const containerName = `buildx_buildkit_${buildxName}0`;
         core.debug(`container name: ${containerName}`);
+        core.info((_a = process.env.npm_package_version) !== null && _a !== void 0 ? _a : "empty-version");
         try {
             yield core.group('Stopping buildx', () => __awaiter(this, void 0, void 0, function* () {
                 yield exec.exec('docker', [
