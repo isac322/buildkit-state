@@ -64,3 +64,6 @@ jobs:
           ldflags: -s -w
           trimpath: true
           working_dir: probe
+      - name: Check binaries
+        run: |
+          ls -ahl build
