@@ -70,3 +70,13 @@ jobs:
       - name: Check binaries
         run: |
           ls -ahl build
+      - name: Run UPX
+        uses: crazy-max/ghaction-upx@v2
+        with:
+          version: latest
+          files: |
+            ./build/*
+          args: --lzma --ultra-brute
+      - name: Check binaries
+        run: |
+          ls -ahl build
