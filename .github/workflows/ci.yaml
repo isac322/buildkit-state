@@ -2,6 +2,9 @@ name: CI
 
 on:
   push:
+    paths:
+      - probe
+      - .github/workflows/ci.yaml
 
   workflow_dispatch:
 
