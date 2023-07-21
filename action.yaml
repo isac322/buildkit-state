@@ -24,8 +24,12 @@ inputs:
   rewrite-cache:
     description: Whether to overwrite when the same cache key already exists
     default: "false"
+  save-on-failure:
+    description: Whether to overwrite when the same cache key already exists
+    default: "false"
 
 runs:
   using: node16
   main: dist/restore/index.js
   post: dist/save/index.js
+  post-if: ${{ success() || inputs.save-on-failure }}
