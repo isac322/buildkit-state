@@ -22,7 +22,7 @@ jobs:
         with:
           version: latest
           working-directory: probe
-          args: --allow-parallel-runners --verbose probe
+          args: --allow-parallel-runners --verbose
 
   test:
     runs-on: ubuntu-latest
