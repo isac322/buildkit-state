@@ -36,7 +36,7 @@ jobs:
       - name: Run minio for integration test
         working-directory: probe
         # language=Bash
-        run: docker compose run --detach --rm --remove-orphans minio
+        run: docker compose run --detach --rm --remove-orphans --service-ports minio
 
       - name: Run test
         working-directory: probe
@@ -57,7 +57,7 @@ jobs:
           dest: build
           pkg: cmd
           v: true
-          x: true
+          x: false
           race: true
           ldflags: -s -w
           trimpath: true
