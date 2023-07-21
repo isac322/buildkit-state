@@ -55,9 +55,9 @@ jobs:
         with:
           go_version: '1.20'
           dest: build
-          pkg: github.com/isac322/buildkit-state/probe/cmd
+          pkg: cmd
           v: true
-          x: false
+          x: true
           race: true
           ldflags: -s -w
           trimpath: true
