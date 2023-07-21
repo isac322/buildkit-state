@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  minio:
+    image: quay.io/minio/minio
+    ports:
+      - published: 9090
+        target: 9000
+      - published: 9001
+        target: 9001
+    command:
+      - server
+      - /tmp/data
+      - --console-address
+      - :9001
