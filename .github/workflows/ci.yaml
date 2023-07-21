@@ -69,7 +69,7 @@ jobs:
           working_dir: probe
       - name: Check binaries
         run: |
-          ls -ahl build
+          ls -ahl probe/build
       - name: Run UPX
         uses: crazy-max/ghaction-upx@v2
         with:
@@ -79,4 +79,4 @@ jobs:
           args: --lzma --ultra-brute
       - name: Check binaries
         run: |
-          ls -ahl build
+          ls -ahl probe/build
