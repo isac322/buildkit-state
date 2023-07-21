@@ -32,4 +32,4 @@ runs:
   using: node16
   main: dist/restore/index.js
   post: dist/save/index.js
-  post-if: ${{ success() || inputs.save-on-failure }}
+  post-if: success() || inputs.save-on-failure
