@@ -60,10 +60,10 @@ jobs:
           go_version: '1.20'
           dest: build
           pkg: cmd
+          prefix: buildkit-state
           targets: linux/amd64,linux/arm,linux/arm64,darwin/amd64,darwin/arm64,windows/amd64
           v: true
           x: false
-          race: true
           ldflags: -s -w
           trimpath: true
           working_dir: probe
