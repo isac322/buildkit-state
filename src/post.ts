@@ -1,6 +1,7 @@
 import * as cache from '@actions/cache'
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
+import * as github from '@actions/github'
 import {
   BUILDKIT_STATE_PATH,
   STATE_BUILDKIT_STATE_PATH_KEY,
@@ -18,6 +19,7 @@ async function run(): Promise<void> {
       core.info('Cache key matched. Ignore cache saving.')
       return
     }
+    core.info(JSON.parse(github.context.job))
 
     await core.group('Removing unwanted caches', async () => {
       const targetTypes = core.getMultilineInput('target-types')

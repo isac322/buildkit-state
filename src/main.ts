@@ -2,7 +2,6 @@ import * as cache from '@actions/cache'
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 import * as io from '@actions/io'
-import fsPromise from 'fs/promises'
 import Docskerode from 'dockerode'
 import {
   BUILDKIT_STATE_PATH,
