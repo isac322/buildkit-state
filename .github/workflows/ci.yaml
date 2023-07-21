@@ -41,7 +41,7 @@ jobs:
       - name: Run test
         working-directory: probe
         # language=Bash
-        run: go test -race probe/..
+        run: go test -race ./...
         env:
           S3_HOST: localhost
           S3_PORT: 9090
