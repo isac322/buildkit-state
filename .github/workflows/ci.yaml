@@ -75,7 +75,7 @@ jobs:
         with:
           version: latest
           files: |
-            ./build/*
+            probe/build/*
           args: --lzma --ultra-brute
       - name: Check binaries
         run: |
