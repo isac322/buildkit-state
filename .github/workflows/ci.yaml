@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+
+  workflow_dispatch:
+
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: probe/go.mod
+          cache: false
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          working-directory: probe
+          args: --allow-parallel-runners --verbose probe
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: probe/go.mod
+
+      - name: Run minio for integration test
+        working-directory: probe
+        # language=Bash
+        run: docker compose run --rm --remove-orphans minio
+
+      - name: Run test
+        working-directory: probe
+        # language=Bash
+        run: go test -race ./..
+        env:
+          S3_HOST: localhost
+          S3_PORT: 9090
+
+  build:
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+    runs-on: ${{matrix.os}}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build
+        uses: crazy-max/ghaction-xgo@v2
+        with:
+          xgo_version: latest
+          go_version: 1.20
+          dest: build
+          pkg: github.com/isac322/buildkit-state/probe/cmd
+          v: true
+          x: false
+          race: true
+          ldflags: -s -w
+          trimpath: true
+          working_dir: probe
