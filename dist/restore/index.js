@@ -6601,9 +6601,6 @@ exports.getBinary = void 0;
 const os_1 = __importDefault(__nccwpck_require__(2037));
 const core = __importStar(__nccwpck_require__(2186));
 const toolCache = __importStar(__nccwpck_require__(7784));
-const io = __importStar(__nccwpck_require__(7436));
-const path_1 = __importDefault(__nccwpck_require__(1017));
-const exec_1 = __nccwpck_require__(1514);
 const binaryPrefix = 'buildkit-state';
 const toolName = 'buildkit_state';
 async function getBinary(version) {
@@ -6617,14 +6614,12 @@ async function getBinary(version) {
     core.debug(`filename: ${filename}`);
     core.info(`Downloading ${filename}...`);
     const downPath = await toolCache.downloadTool(`https://github.com/isac322/buildkit-state/releases/download/v${version}/${filename}`);
-    const newPath = path_1.default.join(path_1.default.dirname(downPath), filename);
-    await io.mv(downPath, newPath);
-    await (0, exec_1.exec)('ls', ['-ahl', path_1.default.dirname(downPath)]);
-    await (0, exec_1.exec)('ls', ['-ahl', newPath]);
     core.debug(`downloaded path: ${downPath}`);
     core.info(`Caching ${filename} for future usage...`);
+    const toolPath = await toolCache.cacheFile(downPath, filename, toolName, version);
+    core.debug(`toolPath: ${toolPath}`);
     return {
-        toolPath: await toolCache.cacheFile(path_1.default.dirname(downPath), filename, toolName, version),
+        toolPath,
         binaryName: filename
     };
 }
