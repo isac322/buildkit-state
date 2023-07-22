@@ -1,6 +1,7 @@
 import os from 'os'
 import * as core from '@actions/core'
 import * as toolCache from '@actions/tool-cache'
+import path from 'path'
 
 const binaryPrefix = 'buildkit-state'
 const toolName = 'buildkit_state'
@@ -10,6 +11,7 @@ export async function getBinary(
 ): Promise<{toolPath: string; binaryName: string}> {
   const filename = getFilename()
   const cachedPath = toolCache.find(toolName, version)
+  core.debug(`cached path: ${cachedPath}`)
   if (cachedPath) {
     core.info('Restore from cache')
     return {toolPath: cachedPath, binaryName: filename}
@@ -21,9 +23,15 @@ export async function getBinary(
   const downPath = await toolCache.downloadTool(
     `https://github.com/isac322/buildkit-state/releases/download/v${version}/${filename}`
   )
+  core.debug(`downloaded path: ${downPath}`)
   core.info(`Caching ${filename} for future usage...`)
   return {
-    toolPath: await toolCache.cacheFile(downPath, filename, toolName, version),
+    toolPath: await toolCache.cacheFile(
+      path.basename(downPath),
+      filename,
+      toolName,
+      version
+    ),
     binaryName: filename
   }
 }

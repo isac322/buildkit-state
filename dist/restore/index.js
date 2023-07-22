@@ -6601,11 +6601,13 @@ exports.getBinary = void 0;
 const os_1 = __importDefault(__nccwpck_require__(2037));
 const core = __importStar(__nccwpck_require__(2186));
 const toolCache = __importStar(__nccwpck_require__(7784));
+const path_1 = __importDefault(__nccwpck_require__(1017));
 const binaryPrefix = 'buildkit-state';
 const toolName = 'buildkit_state';
 async function getBinary(version) {
     const filename = getFilename();
     const cachedPath = toolCache.find(toolName, version);
+    core.debug(`cached path: ${cachedPath}`);
     if (cachedPath) {
         core.info('Restore from cache');
         return { toolPath: cachedPath, binaryName: filename };
@@ -6613,9 +6615,10 @@ async function getBinary(version) {
     core.debug(`filename: ${filename}`);
     core.info(`Downloading ${filename}...`);
     const downPath = await toolCache.downloadTool(`https://github.com/isac322/buildkit-state/releases/download/v${version}/${filename}`);
+    core.debug(`downloaded path: ${downPath}`);
     core.info(`Caching ${filename} for future usage...`);
     return {
-        toolPath: await toolCache.cacheFile(downPath, filename, toolName, version),
+        toolPath: await toolCache.cacheFile(path_1.default.basename(downPath), filename, toolName, version),
         binaryName: filename
     };
 }
@@ -6829,7 +6832,7 @@ module.exports = require("util");
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"name":"buildkit-state","version":"2.0.1","private":true,"description":"Load and save buildkit state.","main":"lib/main.js","scripts":{"build":"tsc","format":"prettier --write \'**/*.ts\'","format-check":"prettier --check \'**/*.ts\'","lint":"eslint src/**/*.ts","package":"ncc build -s -o dist/restore src/main.ts --license license.txt && ncc build -s -o dist/save src/post.ts --license license.txt","all":"npm run build && npm run format && npm run lint && npm run package","compile-on-docker":"docker run --rm -ti -v $(pwd):/app:ro -v $(pwd)/dist:/app/dist -v $(mktemp -d):/app/node_modules -v $(mktemp -d):/app/lib --workdir /app node:16 bash -ceux \'npm ci && npm run build && npm run package\'"},"repository":{"type":"git","url":"git+https://github.com/isac322/buildkit-state.git"},"keywords":["actions","docker","buildkit","cache"],"author":{"name":"Byeonghoon yoo","email":"bhyoo@bhyoo.com"},"license":"MIT","dependencies":{"@actions/core":"^1.10.0","@actions/exec":"^1.1.1","@actions/io":"^1.1.3","@actions/tool-cache":"^2.0.1"},"devDependencies":{"@tsconfig/node16":"^16.1.0","@types/node":"^16.11.7","@typescript-eslint/eslint-plugin":"^6.1.0","@typescript-eslint/parser":"^6.1.0","@vercel/ncc":"^0.36.1","eslint":"^8.45.0","eslint-plugin-github":"^4.9.2","js-yaml":"^4.1.0","prettier":"^3.0.0","typescript":"^5.1.6"}}');
+module.exports = JSON.parse('{"name":"buildkit-state","version":"2.0.1","private":true,"description":"Load and save buildkit state.","main":"lib/main.js","scripts":{"build":"tsc","format":"prettier --write \'**/*.ts\'","format-check":"prettier --check \'**/*.ts\'","lint":"eslint src/**/*.ts","package":"ncc build -s -o dist/restore src/main.ts --license license.txt && ncc build -s -o dist/save src/post.ts --license license.txt","all":"npm run build && npm run format && npm run lint && npm run package","compile-on-docker":"docker run --rm -ti -v $(pwd):/app:ro -v $(pwd)/dist:/app/dist -v $(mktemp -d):/app/node_modules -v $(mktemp -d):/app/lib --workdir /app node:16 bash -ceux \'npm ci && npm run build && npm run package\'"},"repository":{"type":"git","url":"git+https://github.com/isac322/buildkit-state.git"},"keywords":["actions","docker","buildkit","cache"],"author":{"name":"Byeonghoon yoo","email":"bhyoo@bhyoo.com"},"license":"MIT","dependencies":{"@actions/core":"^1.10.0","@actions/exec":"^1.1.1","@actions/tool-cache":"^2.0.1"},"devDependencies":{"@tsconfig/node16":"^16.1.0","@types/node":"^16.11.7","@typescript-eslint/eslint-plugin":"^6.1.0","@typescript-eslint/parser":"^6.1.0","@vercel/ncc":"^0.36.1","eslint":"^8.45.0","eslint-plugin-github":"^4.9.2","js-yaml":"^4.1.0","prettier":"^3.0.0","typescript":"^5.1.6"}}');
 
 /***/ })
 
