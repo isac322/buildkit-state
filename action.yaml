@@ -2,52 +2,52 @@ name: "Buildkit state"
 description: Load and save buildkit state.
 inputs:
   buildx-name:
-    description: |
-      Name of buildx. Required if `buildx_container_name` is not given.
-      Fill as `name` output of `docker/setup-buildx-action` actions.
-  buildx-container-name:
-    description: Name of buildx container. Required if `buildx_name` is not given.
+    description: Name of buildx. Fill as `name` output of `docker/setup-buildx-action` actions.
+    required: true
   cache-key:
-    description: Github cache key.
+    description: Unique id of cache. When loading, it is used for retrieval, and when saving, it is allocated to the cache.
     required: true
     default: ${{ runner.os }}-buildkit_state-${{ github.sha }}
   cache-restore-keys:
-    description: Github cache restore key.
+    description: Keys to be used if the search with `cache-key` fails on load.
     required: true
     default: |
       ${{ runner.os }}-buildkit_state-
   remote-type:
-    description: Remote cache storage to store buildkit state (`gha` or `s3)
+    description: Remote cache storage to store buildkit state (`gha` or `s3`)
     required: true
     default: "gha"
   target-types:
-    description: '`regular` | `source.local` | `exec.cachemount` | `frontend` | `internal`'
+    description: |
+      Choose which type of BuildKit state to save.
+      Since `exec.cachemount` corresponds to `mount=type=cache`, you can use the default value in most cases.
+      Options: `regular`, `source.local`, `exec.cachemount`, `frontend`, `internal` (https://pkg.go.dev/github.com/moby/buildkit/client#UsageRecordType)
     default: |
       exec.cachemount
       frontend
     required: true
   rewrite-cache:
-    description: Whether to overwrite when the same cache key already exists
+    description: Whether to overwrite when the same cache key already exists.
     default: "false"
   save-on-failure:
-    description: Whether to save cache even if job fails
+    description: Whether to save cache even if job fails.
     default: "false"
   compression-level:
     description: Zstd compression level (from 1 to 22)
     default: "3"
   s3-bucket-name:
-    description: S3 bucket name to store cache (required if `remote-type` is s3)
+    description: S3 bucket name to store cache (required if `remote-type` is `s3`)
   s3-key-prefix:
-    description: S3 key prefix (required if `remote-type` is s3)
+    description: S3 key prefix (required if `remote-type` is `s3`)
   s3-url:
     description: URL of S3 (only required if non-AWS S3 but S3 compatible object storage like Minio)
 
 outputs:
-  cache-key:
+  restored-cache-key:
     description: Cache key restored from
 
 runs:
   using: node16
   main: dist/restore/index.js
   post: dist/save/index.js
-  post-if: success()
+  post-if: success() || github.event.inputs.save-on-failure

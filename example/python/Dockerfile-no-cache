@@ -1,0 +1,21 @@
+FROM python:3.11 as builder
+WORKDIR /app
+
+COPY pyproject.toml .
+COPY example example
+
+RUN pip install build  \
+    && python -m build --wheel --outdir /dist  \
+    && pip wheel /dist/*.whl -w /wheels --disable-pip-version-check --no-clean --use-pep517
+
+FROM python:3.11-slim
+ENTRYPOINT ["print_version"]
+
+RUN \
+  --mount=type=bind,target=/wheels,from=builder,source=/wheels \
+  --mount=type=bind,target=/dist,from=builder,source=/dist \
+    pip install \
+      --no-index \
+      --no-deps \
+      --find-links=/wheels \
+      /dist/*.whl
