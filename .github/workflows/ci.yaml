@@ -103,7 +103,7 @@ jobs:
           generate_release_notes: true
           fail_on_unmatched_files: true
 
-      - name: Update the v${{ steps.check.outputs.version }} tag
+      - name: Update tag
         if: github.event_name == 'workflow_dispatch' || (github.ref_name == 'main' && steps.check.outputs.changed == 'true')
         uses: actions/publish-action@v0.2.2
         with:
