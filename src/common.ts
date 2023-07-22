@@ -1,7 +1,7 @@
 import fs from 'fs/promises'
 import os from 'os'
 import * as core from '@actions/core'
-import exec from '@actions/exec'
+import * as exec from '@actions/exec'
 import * as toolCache from '@actions/tool-cache'
 
 const binaryPrefix = 'buildkit-state'

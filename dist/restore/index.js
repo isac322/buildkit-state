@@ -6601,7 +6601,7 @@ exports.setDockerAPIVersionToEnv = exports.getBinary = void 0;
 const promises_1 = __importDefault(__nccwpck_require__(3292));
 const os_1 = __importDefault(__nccwpck_require__(2037));
 const core = __importStar(__nccwpck_require__(2186));
-const exec_1 = __importDefault(__nccwpck_require__(1514));
+const exec = __importStar(__nccwpck_require__(1514));
 const toolCache = __importStar(__nccwpck_require__(7784));
 const binaryPrefix = 'buildkit-state';
 const toolName = 'buildkit_state';
@@ -6658,7 +6658,7 @@ function getFilename() {
     throw new Error(`Unsupported platform (${platform}) and architecture (${arch})`);
 }
 async function setDockerAPIVersionToEnv() {
-    const dockerServerVersion = await exec_1.default.getExecOutput('docker', [
+    const dockerServerVersion = await exec.getExecOutput('docker', [
         'version',
         '-f',
         '{{.Server.APIVersion}}'
