@@ -6598,6 +6598,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getBinary = void 0;
+const promises_1 = __importDefault(__nccwpck_require__(3292));
 const os_1 = __importDefault(__nccwpck_require__(2037));
 const core = __importStar(__nccwpck_require__(2186));
 const toolCache = __importStar(__nccwpck_require__(7784));
@@ -6614,6 +6615,7 @@ async function getBinary(version) {
     core.debug(`filename: ${filename}`);
     core.info(`Downloading ${filename}...`);
     const downPath = await toolCache.downloadTool(`https://github.com/isac322/buildkit-state/releases/download/v${version}/${filename}`);
+    await promises_1.default.chmod(downPath, 0o755);
     core.debug(`downloaded path: ${downPath}`);
     core.info(`Caching ${filename} for future usage...`);
     const toolPath = await toolCache.cacheFile(downPath, filename, toolName, version);
@@ -6746,6 +6748,14 @@ module.exports = require("events");
 
 "use strict";
 module.exports = require("fs");
+
+/***/ }),
+
+/***/ 3292:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("fs/promises");
 
 /***/ }),
 

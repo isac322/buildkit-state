@@ -1,3 +1,4 @@
+import fs from 'fs/promises'
 import os from 'os'
 import * as core from '@actions/core'
 import * as toolCache from '@actions/tool-cache'
@@ -22,6 +23,7 @@ export async function getBinary(
   const downPath = await toolCache.downloadTool(
     `https://github.com/isac322/buildkit-state/releases/download/v${version}/${filename}`
   )
+  await fs.chmod(downPath, 0o755)
   core.debug(`downloaded path: ${downPath}`)
   core.info(`Caching ${filename} for future usage...`)
   const toolPath = await toolCache.cacheFile(
