@@ -15,9 +15,12 @@ type RemoteManager interface {
 
 func getMultilineInput(gha *githubactions.Action, name string) []string {
 	raw := gha.GetInput(name)
+	if raw == "" {
+		return nil
+	}
 	splitted := strings.Split(raw, "\n")
 	return slices.DeleteFunc(splitted, func(s string) bool {
-		return s != ""
+		return s == ""
 	})
 }
 

@@ -5,7 +5,6 @@ import "github.com/moby/buildkit/client"
 const (
 	BuildKitStateDir = "/var/lib/buildkit"
 
-	inputBuildxName       = "buildx-name"
 	inputPrimaryKey       = "cache-key"
 	inputSecondaryKeys    = "cache-restore-keys"
 	inputTargetTypes      = "target-types"
@@ -13,7 +12,7 @@ const (
 	inputResumeBuilder    = "resume-builder"
 	inputCompressionLevel = "compression-level"
 
-	outputCacheKey = "cache-key"
+	outputRestoredCacheKey = "restored-cache-key"
 
 	stateLoadedCacheKey = "loaded-cache-key"
 )

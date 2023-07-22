@@ -57,7 +57,7 @@ func LoadFromRemoteToContainer(
 			return
 		}
 		gha.Infof("found cache from key: %v", loaded.Key)
-		gha.SetOutput(outputCacheKey, loaded.Key)
+		gha.SetOutput(outputRestoredCacheKey, loaded.Key)
 	}()
 	if err != nil {
 		return err
