@@ -6,12 +6,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
-	bkclient "github.com/moby/buildkit/client"
+	"github.com/isac322/buildkit-state/probe/internal/buildkit"
+	gha2 "github.com/isac322/buildkit-state/probe/internal/gha"
+
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-githubactions"
-	"golang.org/x/exp/slices"
 )
 
 type Saver interface {
@@ -21,9 +20,7 @@ type Saver interface {
 func SaveFromContainerToRemote(
 	ctx context.Context,
 	gha *githubactions.Action,
-	docker client.CommonAPIClient,
-	buildkit *bkclient.Client,
-	builderName string,
+	bkCli buildkit.Driver,
 	saver Saver,
 ) (err error) {
 	cacheKey := gha.GetInput(inputPrimaryKey)
@@ -45,36 +42,31 @@ func SaveFromContainerToRemote(
 		gha.Group("Remove unwanted caches")
 		defer gha.EndGroup()
 
-		targetTypes := getMultilineInput(gha, inputTargetTypes)
-		filters := make([]string, 0, len(pruneTypes))
-		for _, recordType := range pruneTypes {
-			rt := string(recordType)
-			if slices.Contains(targetTypes, rt) {
-				continue
-			}
-			filters = append(filters, "type=="+rt)
-		}
-
-		err = buildkit.Prune(ctx, nil, bkclient.WithFilter(filters))
+		targetTypes := gha2.GetMultilineInput(gha, inputTargetTypes)
+		err = bkCli.PruneExcept(ctx, targetTypes)
 		if err != nil {
 			gha.Errorf(`Failed to prune caches: %+v`, err)
 			return
 		}
 
-		err = printDiskUsage(ctx, gha, buildkit)
+		var usage []byte
+		usage, err = bkCli.PrintDiskUsage(ctx)
+		if err != nil {
+			gha.Errorf("Failed to print disk usage: %+v", err)
+			return
+		}
+		gha.Infof(string(usage))
 	}()
 	if err != nil {
 		return err
 	}
-
-	containerName := BuildKitContainerNameFromBuilder(builderName)
 
 	func() {
 		gha.Group("Save buildkit state to remote")
 		defer gha.EndGroup()
 
 		gha.Infof("stopping buildkitd...")
-		err = docker.ContainerStop(ctx, containerName, container.StopOptions{})
+		err = bkCli.Stop(ctx)
 		if err != nil {
 			gha.Errorf("Failed to stop buildkitd container: %+v", err)
 			return
@@ -89,7 +81,7 @@ func SaveFromContainerToRemote(
 		}
 
 		var buf *bytes.Buffer
-		buf, err = CompressToZstd(ctx, docker, containerName, compressionLevel)
+		buf, err = CompressToZstd(ctx, bkCli, compressionLevel)
 		if err != nil {
 			gha.Errorf("Failed to compress buildkit state: %+v", err)
 			return

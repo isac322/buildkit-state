@@ -1,7 +1,5 @@
 package internal
 
-import "github.com/moby/buildkit/client"
-
 const (
 	BuildKitStateDir = "/var/lib/buildkit"
 
@@ -16,12 +14,3 @@ const (
 
 	stateLoadedCacheKey = "loaded-cache-key"
 )
-
-var pruneTypes = []client.UsageRecordType{
-	client.UsageRecordTypeInternal,
-	client.UsageRecordTypeFrontend,
-	client.UsageRecordTypeLocalSource,
-	client.UsageRecordTypeGitCheckout,
-	client.UsageRecordTypeCacheMount,
-	client.UsageRecordTypeRegular,
-}

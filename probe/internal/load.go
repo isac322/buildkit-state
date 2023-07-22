@@ -5,10 +5,9 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
-	bkclient "github.com/moby/buildkit/client"
+	"github.com/isac322/buildkit-state/probe/internal/buildkit"
+	gha2 "github.com/isac322/buildkit-state/probe/internal/gha"
+
 	"github.com/pkg/errors"
 	"github.com/samber/mo"
 	"github.com/sethvargo/go-githubactions"
@@ -27,9 +26,7 @@ type Loader interface {
 func LoadFromRemoteToContainer(
 	ctx context.Context,
 	gha *githubactions.Action,
-	docker client.CommonAPIClient,
-	buildkit *bkclient.Client,
-	builderName string,
+	bkCli buildkit.Driver,
 	loader Loader,
 ) (err error) {
 	var loaded LoadedCache
@@ -41,7 +38,7 @@ func LoadFromRemoteToContainer(
 
 		primaryKey := gha.GetInput(inputPrimaryKey)
 		gha.Debugf("primary key: %v", primaryKey)
-		secondaryKeys := getMultilineInput(gha, inputSecondaryKeys)
+		secondaryKeys := gha2.GetMultilineInput(gha, inputSecondaryKeys)
 		gha.Debugf("secondary keys: %v", secondaryKeys)
 
 		var cache mo.Option[LoadedCache]
@@ -67,21 +64,20 @@ func LoadFromRemoteToContainer(
 	}
 
 	gha.SaveState(stateLoadedCacheKey, loaded.Key)
-	containerName := BuildKitContainerNameFromBuilder(builderName)
 
 	func() {
 		gha.Group("Load cache to docker")
 		defer gha.EndGroup()
 
 		gha.Infof("stopping buildkitd...")
-		err = docker.ContainerStop(ctx, containerName, container.StopOptions{})
+		err = bkCli.Stop(ctx)
 		if err != nil {
 			gha.Errorf("Failed to stop buildkitd container: %+v", err)
 			return
 		}
 
 		gha.Infof("restoring cache into buildkitd...")
-		err = DecompressZstdTo(ctx, docker, containerName, loaded.Data)
+		err = DecompressZstdTo(ctx, bkCli, loaded.Data)
 		if err != nil {
 			gha.Errorf("Failed to restore cache into buildkitd: %+v", err)
 			return
@@ -106,13 +102,19 @@ func LoadFromRemoteToContainer(
 		defer gha.EndGroup()
 
 		gha.Infof("starting buildkitd...")
-		err = docker.ContainerStart(ctx, containerName, types.ContainerStartOptions{})
+		err = bkCli.Resume(ctx)
 		if err != nil {
 			gha.Errorf("Failed to resume buildkitd container: %+v", err)
 			return
 		}
 
-		err = printDiskUsage(ctx, gha, buildkit)
+		var usage []byte
+		usage, err = bkCli.PrintDiskUsage(ctx)
+		if err != nil {
+			gha.Errorf("Failed to print disk usage: %+v", err)
+			return
+		}
+		gha.Infof(string(usage))
 	}()
 
 	return err

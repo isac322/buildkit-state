@@ -4,13 +4,13 @@ import (
 	"context"
 
 	"github.com/isac322/buildkit-state/probe/internal"
+	"github.com/isac322/buildkit-state/probe/internal/buildkit"
 	"github.com/isac322/buildkit-state/probe/internal/github"
 	"github.com/isac322/buildkit-state/probe/internal/s3"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/docker/docker/client"
-	bkclient "github.com/moby/buildkit/client"
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-githubactions"
 )
@@ -69,38 +69,20 @@ func newManager(ctx context.Context, gha *githubactions.Action) (manager interna
 	}
 }
 
-func newDependencies(ctx context.Context) (
-	*githubactions.Action,
-	client.CommonAPIClient,
-	*bkclient.Client,
-	string,
-	internal.RemoteManager,
-	error,
-) {
+func newDependencies(ctx context.Context) (*githubactions.Action, buildkit.Driver, internal.RemoteManager, error) {
 	gha := githubactions.New()
 	manager, err := newManager(ctx, gha)
 	if err != nil {
-		return nil, nil, nil, "", nil, err
+		return nil, nil, nil, err
 	}
 
 	docker, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		gha.Errorf("Failed connect docker: %+v", err)
-		return nil, nil, nil, "", nil, err
+		return nil, nil, nil, err
 	}
 
 	builderName := gha.GetInput(inputBuildxName)
-	bkcli, err := bkclient.New(
-		ctx,
-		"docker-container://"+internal.BuildKitContainerNameFromBuilder(builderName),
-	)
-	if err != nil {
-		gha.Errorf(
-			"Failed connect buildkitd: %+v. The Action only supports `docker-container` driver of buildkit",
-			err,
-		)
-		return nil, nil, nil, "", nil, err
-	}
-
-	return gha, docker, bkcli, builderName, manager, nil
+	bkCli := buildkit.NewContainerizedDriver(docker, builderName)
+	return gha, bkCli, manager, nil
 }

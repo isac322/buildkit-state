@@ -20,12 +20,12 @@ func init() {
 func save(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
 
-	gha, docker, bkcli, builderName, loader, err := newDependencies(ctx)
+	gha, bkCli, saver, err := newDependencies(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = internal.SaveFromContainerToRemote(ctx, gha, docker, bkcli, builderName, loader)
+	err = internal.SaveFromContainerToRemote(ctx, gha, bkCli, saver)
 	if err != nil {
 		gha.Errorf("Failed to restore buildkit state: %+v", err)
 		return err

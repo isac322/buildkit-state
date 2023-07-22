@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 
-	_ "github.com/moby/buildkit/client/connhelper/dockercontainer"
 	"github.com/spf13/cobra"
 	_ "go.uber.org/automaxprocs"
 )

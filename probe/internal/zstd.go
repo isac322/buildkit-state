@@ -6,20 +6,15 @@ import (
 	"errors"
 	"io"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/client"
+	"github.com/isac322/buildkit-state/probe/internal/buildkit"
+
 	pkgerrors "github.com/pkg/errors"
 	"github.com/valyala/gozstd"
 )
 
 const is64Bit = uint64(^uintptr(0)) == ^uint64(0)
 
-func DecompressZstdTo(
-	ctx context.Context,
-	docker client.CommonAPIClient,
-	container string,
-	body io.ReadCloser,
-) (err error) {
+func DecompressZstdTo(ctx context.Context, bkCli buildkit.Driver, body io.ReadCloser) (err error) {
 	zstdReader := gozstd.NewReader(body)
 	defer zstdReader.Release()
 	defer func() {
@@ -34,16 +29,11 @@ func DecompressZstdTo(
 		}
 	}()
 
-	return docker.CopyToContainer(ctx, container, BuildKitStateDir, zstdReader, types.CopyToContainerOptions{})
+	return bkCli.CopyTo(ctx, BuildKitStateDir, zstdReader)
 }
 
-func CompressToZstd(
-	ctx context.Context,
-	docker client.CommonAPIClient,
-	container string,
-	compressionLevel int,
-) (*bytes.Buffer, error) {
-	contents, stats, err := docker.CopyFromContainer(ctx, container, BuildKitStateDir)
+func CompressToZstd(ctx context.Context, bkCli buildkit.Driver, compressionLevel int) (*bytes.Buffer, error) {
+	contents, size, err := bkCli.CopyFrom(ctx, BuildKitStateDir)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +45,7 @@ func CompressToZstd(
 		windowLog = gozstd.WindowLogMax32
 	}
 
-	buf := bytes.NewBuffer(make([]byte, 0, stats.Size/2))
+	buf := bytes.NewBuffer(make([]byte, 0, size/2))
 	writer := gozstd.NewWriterParams(
 		buf,
 		&gozstd.WriterParams{

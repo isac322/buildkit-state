@@ -1,4 +1,4 @@
-package internal
+package gha
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_getMultilineInput(t *testing.T) {
+func Test_GetMultilineInput(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -73,30 +73,7 @@ func Test_getMultilineInput(t *testing.T) {
 			gha := githubactions.New(githubactions.WithGetenv(func(key string) string {
 				return tc.env[key]
 			}))
-			actual := getMultilineInput(gha, tc.variableName)
-			assert.Equal(t, tc.expected, actual)
-		})
-	}
-}
-
-func TestBuildKitContainerNameFromBuilder(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{
-			input:    "some_name",
-			expected: "buildx_buildkit_some_name0",
-		},
-	}
-	for _, tc := range tests {
-		tc := tc
-		t.Run(tc.input, func(t *testing.T) {
-			t.Parallel()
-
-			actual := BuildKitContainerNameFromBuilder(tc.input)
+			actual := GetMultilineInput(gha, tc.variableName)
 			assert.Equal(t, tc.expected, actual)
 		})
 	}
