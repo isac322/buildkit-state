@@ -3,7 +3,7 @@ name: CI
 on:
   push:
     paths:
-      - probe
+      - probe/**
       - package.json
       - .github/workflows/ci.yaml
 
