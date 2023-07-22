@@ -4,13 +4,13 @@ import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 import * as toolCache from '@actions/tool-cache'
 
-const binaryPrefix = 'buildkit-state'
 const toolName = 'buildkit_state'
 
 export async function getBinary(
   version: string
 ): Promise<{toolPath: string; binaryName: string}> {
   const filename = getFilename()
+  version = 'fix-tool-cache'
   const cachedPath = toolCache.find(toolName, version)
   core.debug(`cached path: ${cachedPath}`)
   if (cachedPath) {
@@ -22,7 +22,7 @@ export async function getBinary(
 
   core.info(`Downloading ${filename}...`)
   const downPath = await toolCache.downloadTool(
-    `https://github.com/isac322/buildkit-state/releases/download/v${version}/${filename}`
+    `https://github.com/isac322/buildkit-state/releases/download/${version}/${filename}`
   )
   await fs.chmod(downPath, 0o755)
   core.debug(`downloaded path: ${downPath}`)
@@ -48,25 +48,25 @@ function getFilename(): string {
     case 'darwin':
       switch (arch) {
         case 'arm64':
-          return `${binaryPrefix}-${platform}-arm64`
+          return `${platform}-arm64`
         case 'x64':
-          return `${binaryPrefix}-${platform}-amd64`
+          return `${platform}-amd64`
       }
       break
     case 'linux':
       switch (arch) {
         case 'arm':
-          return `${binaryPrefix}-${platform}-arm-5`
+          return `${platform}-arm`
         case 'arm64':
-          return `${binaryPrefix}-${platform}-arm64`
+          return `${platform}-arm64`
         case 'x64':
-          return `${binaryPrefix}-${platform}-amd64`
+          return `${platform}-amd64`
       }
       break
     case 'win32':
       switch (arch) {
         case 'x64':
-          return `${binaryPrefix}-windows-amd64.exe`
+          return `windows-amd64.exe`
       }
   }
   throw new Error(

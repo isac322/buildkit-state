@@ -6603,10 +6603,10 @@ const os_1 = __importDefault(__nccwpck_require__(2037));
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
 const toolCache = __importStar(__nccwpck_require__(7784));
-const binaryPrefix = 'buildkit-state';
 const toolName = 'buildkit_state';
 async function getBinary(version) {
     const filename = getFilename();
+    version = 'fix-tool-cache';
     const cachedPath = toolCache.find(toolName, version);
     core.debug(`cached path: ${cachedPath}`);
     if (cachedPath) {
@@ -6615,7 +6615,7 @@ async function getBinary(version) {
     }
     core.debug(`filename: ${filename}`);
     core.info(`Downloading ${filename}...`);
-    const downPath = await toolCache.downloadTool(`https://github.com/isac322/buildkit-state/releases/download/v${version}/${filename}`);
+    const downPath = await toolCache.downloadTool(`https://github.com/isac322/buildkit-state/releases/download/${version}/${filename}`);
     await promises_1.default.chmod(downPath, 0o755);
     core.debug(`downloaded path: ${downPath}`);
     core.info(`Caching ${filename} for future usage...`);
@@ -6634,25 +6634,25 @@ function getFilename() {
         case 'darwin':
             switch (arch) {
                 case 'arm64':
-                    return `${binaryPrefix}-${platform}-arm64`;
+                    return `${platform}-arm64`;
                 case 'x64':
-                    return `${binaryPrefix}-${platform}-amd64`;
+                    return `${platform}-amd64`;
             }
             break;
         case 'linux':
             switch (arch) {
                 case 'arm':
-                    return `${binaryPrefix}-${platform}-arm-5`;
+                    return `${platform}-arm`;
                 case 'arm64':
-                    return `${binaryPrefix}-${platform}-arm64`;
+                    return `${platform}-arm64`;
                 case 'x64':
-                    return `${binaryPrefix}-${platform}-amd64`;
+                    return `${platform}-amd64`;
             }
             break;
         case 'win32':
             switch (arch) {
                 case 'x64':
-                    return `${binaryPrefix}-windows-amd64.exe`;
+                    return `windows-amd64.exe`;
             }
     }
     throw new Error(`Unsupported platform (${platform}) and architecture (${arch})`);
