@@ -6688,17 +6688,23 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
-const exec = __importStar(__nccwpck_require__(1514));
 const package_json_1 = __nccwpck_require__(4147);
 const common_1 = __nccwpck_require__(9108);
+const child_process_1 = __importDefault(__nccwpck_require__(2081));
+const util_1 = __importDefault(__nccwpck_require__(3837));
 async function run() {
     try {
         core.debug(`version: ${package_json_1.version}`);
         const { toolPath, binaryName } = await (0, common_1.getBinary)(package_json_1.version);
         core.addPath(toolPath);
-        await exec.exec(binaryName, ['load']);
+        await util_1.default.promisify(child_process_1.default.spawn)(binaryName, ['load'], {
+            stdio: 'inherit'
+        });
     }
     catch (error) {
         if (error instanceof Error) {
