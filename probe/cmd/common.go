@@ -37,6 +37,11 @@ func newManager(ctx context.Context, gha *githubactions.Action) (manager interna
 
 	case "s3":
 		bucketName := gha.GetInput(inputS3BucketName)
+		if bucketName == "" {
+			err = errors.Errorf(`"%s" is required`, inputS3BucketName)
+			gha.Errorf(err.Error())
+			return nil, err
+		}
 		keyPrefix := gha.GetInput(inputS3KeyPrefix)
 		customURL := gha.GetInput(inputS3URL)
 
