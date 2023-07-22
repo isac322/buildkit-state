@@ -1,6 +1,7 @@
 import os from 'os'
 import * as core from '@actions/core'
 import * as toolCache from '@actions/tool-cache'
+import * as io from '@actions/io'
 import path from 'path'
 import {exec} from '@actions/exec'
 
@@ -24,8 +25,10 @@ export async function getBinary(
   const downPath = await toolCache.downloadTool(
     `https://github.com/isac322/buildkit-state/releases/download/v${version}/${filename}`
   )
-  await exec('ls', ['-ahl', downPath])
-  await exec('file', [downPath])
+  const newPath = path.join(path.dirname(downPath), filename)
+  await io.mv(downPath, newPath)
+  await exec('ls', ['-ahl', path.dirname(downPath)])
+  await exec('ls', ['-ahl', newPath])
   core.debug(`downloaded path: ${downPath}`)
   core.info(`Caching ${filename} for future usage...`)
   return {
