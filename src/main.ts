@@ -1,6 +1,7 @@
 import * as cache from '@actions/cache'
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
+import * as github from '@actions/github'
 import * as io from '@actions/io'
 import Docskerode from 'dockerode'
 import {
@@ -14,6 +15,7 @@ async function run(): Promise<void> {
   const buildxName = core.getInput('buildx-name')
   const containerName = `buildx_buildkit_${buildxName}0`
   core.debug(`container name: ${containerName}`)
+  core.info(JSON.stringify(github.context))
   core.info(process.env.npm_package_version ?? "empty-version")
 
   try {
