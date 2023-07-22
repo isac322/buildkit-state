@@ -1,6 +1,7 @@
 import fs from 'fs/promises'
 import os from 'os'
 import * as core from '@actions/core'
+import exec from '@actions/exec'
 import * as toolCache from '@actions/tool-cache'
 
 const binaryPrefix = 'buildkit-state'
@@ -71,4 +72,20 @@ function getFilename(): string {
   throw new Error(
     `Unsupported platform (${platform}) and architecture (${arch})`
   )
+}
+
+export async function setDockerAPIVersionToEnv(): Promise<void> {
+  const dockerServerVersion = await exec.getExecOutput('docker', [
+    'version',
+    '-f',
+    '{{.Server.APIVersion}}'
+  ])
+  if (dockerServerVersion.exitCode !== 0) {
+    throw new Error(
+      `Failed to get docker api version: ${dockerServerVersion.stderr}`
+    )
+  }
+  if (process.env.DOCKER_API_VERSION === undefined) {
+    process.env.DOCKER_API_VERSION = dockerServerVersion.stdout
+  }
 }

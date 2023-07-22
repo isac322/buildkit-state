@@ -6597,10 +6597,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getBinary = void 0;
+exports.setDockerAPIVersionToEnv = exports.getBinary = void 0;
 const promises_1 = __importDefault(__nccwpck_require__(3292));
 const os_1 = __importDefault(__nccwpck_require__(2037));
 const core = __importStar(__nccwpck_require__(2186));
+const exec_1 = __importDefault(__nccwpck_require__(1514));
 const toolCache = __importStar(__nccwpck_require__(7784));
 const binaryPrefix = 'buildkit-state';
 const toolName = 'buildkit_state';
@@ -6656,6 +6657,20 @@ function getFilename() {
     }
     throw new Error(`Unsupported platform (${platform}) and architecture (${arch})`);
 }
+async function setDockerAPIVersionToEnv() {
+    const dockerServerVersion = await exec_1.default.getExecOutput('docker', [
+        'version',
+        '-f',
+        '{{.Server.APIVersion}}'
+    ]);
+    if (dockerServerVersion.exitCode !== 0) {
+        throw new Error(`Failed to get docker api version: ${dockerServerVersion.stderr}`);
+    }
+    if (process.env.DOCKER_API_VERSION === undefined) {
+        process.env.DOCKER_API_VERSION = dockerServerVersion.stdout;
+    }
+}
+exports.setDockerAPIVersionToEnv = setDockerAPIVersionToEnv;
 
 
 /***/ }),
@@ -6692,16 +6707,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const core = __importStar(__nccwpck_require__(2186));
-const package_json_1 = __nccwpck_require__(4147);
-const common_1 = __nccwpck_require__(9108);
 const child_process_1 = __importDefault(__nccwpck_require__(2081));
 const util_1 = __importDefault(__nccwpck_require__(3837));
+const core = __importStar(__nccwpck_require__(2186));
+const common_1 = __nccwpck_require__(9108);
+const package_json_1 = __nccwpck_require__(4147);
 async function run() {
     try {
         core.debug(`version: ${package_json_1.version}`);
         const { toolPath, binaryName } = await (0, common_1.getBinary)(package_json_1.version);
         core.addPath(toolPath);
+        await (0, common_1.setDockerAPIVersionToEnv)();
         await util_1.default.promisify(child_process_1.default.spawn)(binaryName, ['load'], {
             stdio: 'inherit'
         });
