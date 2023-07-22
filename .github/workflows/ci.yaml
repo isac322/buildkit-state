@@ -8,6 +8,11 @@ on:
       - .github/workflows/ci.yaml
 
   workflow_dispatch:
+    inputs:
+      version:
+        required: true
+        type: string
+        description: For tag & release
 
 
 jobs:
@@ -75,7 +80,7 @@ jobs:
         run: ls -ahl probe/build
 
       - name: Run UPX
-        if: github.ref_name == 'main'
+        if: github.event_name == 'workflow_dispatch' || github.ref_name == 'main'
         uses: crazy-max/ghaction-upx@v2
         with:
           version: latest
@@ -89,7 +94,7 @@ jobs:
         run: ls -ahl probe/build
 
       - name: Check if version has been updated
-        if: github.event_name == 'workflow_dispatch' || github.ref_name == 'main'
+        if: github.event_name == 'push' || github.ref_name == 'main'
         id: check
         uses: EndBug/version-check@v2
 
@@ -97,7 +102,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' || (github.ref_name == 'main' && steps.check.outputs.changed == 'true')
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: 'v${{ steps.check.outputs.version }}'
+          tag_name: 'v${{ steps.check.outputs.version || inputs.version }}'
           files: |
             probe/build/*
           generate_release_notes: true
@@ -107,4 +112,4 @@ jobs:
         if: github.event_name == 'workflow_dispatch' || (github.ref_name == 'main' && steps.check.outputs.changed == 'true')
         uses: actions/publish-action@v0.2.2
         with:
-          source-tag: 'v${{ steps.check.outputs.version }}'
+          source-tag: 'v${{ steps.check.outputs.version || inputs.version }}'
