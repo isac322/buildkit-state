@@ -10,8 +10,7 @@
     "format-check": "prettier --check '**/*.ts'",
     "lint": "eslint src/**/*.ts",
     "package": "ncc build -s -o dist/restore src/main.ts --license license.txt && ncc build -s -o dist/save src/post.ts --license license.txt",
-    "test": "jest",
-    "all": "npm run build && npm run format && npm run lint && npm run package && npm test",
+    "all": "npm run build && npm run format && npm run lint && npm run package",
     "compile-on-docker": "docker run --rm -ti -v $(pwd):/app:ro -v $(pwd)/dist:/app/dist -v $(mktemp -d):/app/node_modules -v $(mktemp -d):/app/lib --workdir /app node:16 bash -ceux 'npm ci && npm run build && npm run package'"
   },
   "repository": {
@@ -37,19 +36,14 @@
   },
   "devDependencies": {
     "@tsconfig/node16": "^16.1.0",
-    "@tsconfig/strictest": "^2.0.1",
-    "@types/jest": "^29.5.3",
     "@types/node": "^16.11.7",
     "@typescript-eslint/eslint-plugin": "^6.1.0",
     "@typescript-eslint/parser": "^6.1.0",
     "@vercel/ncc": "^0.36.1",
     "eslint": "^8.45.0",
     "eslint-plugin-github": "^4.9.2",
-    "eslint-plugin-jest": "^27.2.3",
-    "jest": "^29.6.1",
     "js-yaml": "^4.1.0",
     "prettier": "^3.0.0",
-    "ts-jest": "^29.1.1",
     "typescript": "^5.1.6"
   }
 }
