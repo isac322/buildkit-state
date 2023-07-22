@@ -1,0 +1,52 @@
+name: Benchmark & Example
+
+on:
+  push:
+    paths:
+      - .github/workflows/benchmarks.yaml
+  workflow_dispatch:
+
+jobs:
+  buildkit:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        lang: [python]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Restore BuildKit state
+        uses: isac322/buildkit-state@v2
+        with:
+          buildx-name: ${{ steps.buildx.outputs.name }}
+          cache-key: ${{ runner.os }}-buildkit_state-${{ matrix.lang }}
+          cache-restore-keys: ''
+
+      - name: Build
+        uses: docker/build-push-action@v4
+        with:
+          context: example/${{ matrix.lang }}
+          file: example/${{ matrix.lang }}/Dockerfile-buildkit-cache
+          push: false
+
+  vanilla:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        lang: [python]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build
+        uses: docker/build-push-action@v4
+        with:
+          context: example/${{ matrix.lang }}
+          file: example/${{ matrix.lang }}/Dockerfile-no-cache
+          push: false
