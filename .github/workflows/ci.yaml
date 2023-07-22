@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - probe
+      - package.json
       - .github/workflows/ci.yaml
 
   workflow_dispatch:
@@ -54,6 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - name: Build
         uses: crazy-max/ghaction-xgo@v2
         with:
@@ -67,16 +69,42 @@ jobs:
           ldflags: -s -w
           trimpath: true
           working_dir: probe
+
       - name: Check binaries
-        run: |
-          ls -ahl probe/build
+        # language=Bash
+        run: ls -ahl probe/build
+
       - name: Run UPX
+        if: github.ref_name == 'main'
         uses: crazy-max/ghaction-upx@v2
         with:
           version: latest
           files: |
             probe/build/*
           args: --lzma --ultra-brute
+
       - name: Check binaries
-        run: |
-          ls -ahl probe/build
+        if: github.event_name == 'workflow_dispatch' || github.ref_name == 'main'
+        # language=Bash
+        run: ls -ahl probe/build
+
+      - name: Check if version has been updated
+        if: github.event_name == 'workflow_dispatch' || github.ref_name == 'main'
+        id: check
+        uses: EndBug/version-check@v2
+
+      - name: Create release
+        if: github.event_name == 'workflow_dispatch' || (github.ref_name == 'main' && steps.check.outputs.changed == 'true')
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: 'v${{ steps.check.outputs.version }}'
+          files: |
+            probe/build/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+
+      - name: Update the v${{ steps.check.outputs.version }} tag
+        if: github.event_name == 'workflow_dispatch' || (github.ref_name == 'main' && steps.check.outputs.changed == 'true')
+        uses: actions/publish-action@v0.2.2
+        with:
+          source-tag: 'v${{ steps.check.outputs.version }}'
