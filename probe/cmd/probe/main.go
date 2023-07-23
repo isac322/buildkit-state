@@ -9,6 +9,8 @@ import (
 	"github.com/isac322/buildkit-state/probe/internal/remote"
 
 	"github.com/docker/docker/client"
+	"github.com/goccy/go-json"
+	"github.com/pkg/errors"
 	"github.com/sethvargo/go-githubactions"
 	"github.com/spf13/cobra"
 	_ "go.uber.org/automaxprocs"
@@ -87,7 +89,13 @@ func run(ctx context.Context, worker Worker) error {
 			gha.Errorf("Failed info docker: %+v", err)
 			return err
 		}
-		gha.Infof("%+v", info)
+		escape, err := json.MarshalIndentWithOption(info, "", "    ", json.DisableHTMLEscape())
+		if err != nil {
+			err = errors.WithStack(err)
+			gha.Errorf("Failed marshal docker info into json: %+v", err)
+			return err
+		}
+		gha.Infof("%+s", string(escape))
 	}
 
 	gha.Infof("Connecting to buildkit daemon...")

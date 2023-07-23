@@ -10,6 +10,7 @@ require (
 	github.com/aws/smithy-go v1.13.5
 	github.com/caarlos0/env/v9 v9.0.0
 	github.com/docker/docker v24.0.4+incompatible
+	github.com/goccy/go-json v0.10.2
 	github.com/klauspost/compress v1.16.7
 	github.com/moby/buildkit v0.12.0
 	github.com/pkg/errors v0.9.1
