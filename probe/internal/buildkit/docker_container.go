@@ -2,6 +2,7 @@
 package buildkit
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -115,20 +116,23 @@ func (d *dockerContainer) CopyTo(ctx context.Context, path string, content io.Re
 type hijackedNetConn struct {
 	net.Conn
 	errGrp        *errgroup.Group
+	decodedStdErr *bytes.Buffer
 	decodedStdOut io.ReadCloser
 }
 
 func newHijackedNetConn(res types.HijackedResponse) *hijackedNetConn {
 	errGrp := new(errgroup.Group)
 	decodedStdOut, pipeWriter := io.Pipe()
+	decodedStdErr := new(bytes.Buffer)
 	errGrp.Go(func() error {
-		_, err := stdcopy.StdCopy(pipeWriter, io.Discard, res.Conn)
+		_, err := stdcopy.StdCopy(pipeWriter, decodedStdErr, res.Conn)
 		return err
 	})
 
 	return &hijackedNetConn{
 		res.Conn,
 		errGrp,
+		decodedStdErr,
 		decodedStdOut,
 	}
 }
@@ -137,6 +141,12 @@ func (h hijackedNetConn) Read(b []byte) (n int, err error) {
 	read, err := h.decodedStdOut.Read(b)
 	if err != nil {
 		return read, pkgerrors.WithStack(err)
+	}
+	if h.decodedStdErr.Len() > 0 {
+		stderr := h.decodedStdErr.String()
+		err = pkgerrors.Errorf("failed to read with stderr: %s", stderr)
+		h.decodedStdErr.Truncate(len(stderr))
+		return 0, err
 	}
 	return read, err
 }
