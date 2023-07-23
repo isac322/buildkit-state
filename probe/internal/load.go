@@ -2,28 +2,22 @@ package internal
 
 import (
 	"context"
-	"io"
 	"strconv"
 
 	"github.com/isac322/buildkit-state/probe/internal/buildkit"
 	gha2 "github.com/isac322/buildkit-state/probe/internal/gha"
+	"github.com/isac322/buildkit-state/probe/internal/remote"
 
 	"github.com/pkg/errors"
 	"github.com/samber/mo"
 	"github.com/sethvargo/go-githubactions"
 )
 
-type LoadedCache struct {
-	Key   string
-	Data  io.ReadCloser
-	Extra map[string]any
-}
-
 func LoadFromRemoteToContainer(
 	ctx context.Context,
 	gha *githubactions.Action,
 	bkCli buildkit.Driver,
-	manager RemoteManager,
+	manager remote.Manager,
 ) (err error) {
 	defer func() {
 		if err != nil {
@@ -31,7 +25,7 @@ func LoadFromRemoteToContainer(
 		}
 	}()
 
-	var loaded LoadedCache
+	var loaded remote.LoadedCache
 	var found bool
 
 	func() {
@@ -43,7 +37,7 @@ func LoadFromRemoteToContainer(
 		secondaryKeys := gha2.GetMultilineInput(gha, inputSecondaryKeys)
 		gha.Debugf("secondary keys: %v", secondaryKeys)
 
-		var cache mo.Option[LoadedCache]
+		var cache mo.Option[remote.LoadedCache]
 		cache, err = manager.Load(ctx, primaryKey, secondaryKeys)
 		if err != nil {
 			gha.Errorf("Failed to load cache from remote: %+v", err)

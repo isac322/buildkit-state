@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 
-	"github.com/isac322/buildkit-state/probe/internal"
-	"github.com/isac322/buildkit-state/probe/internal/github"
-	"github.com/isac322/buildkit-state/probe/internal/s3"
+	"github.com/isac322/buildkit-state/probe/internal/remote"
+	"github.com/isac322/buildkit-state/probe/internal/remote/github"
+	"github.com/isac322/buildkit-state/probe/internal/remote/s3"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -21,12 +21,12 @@ const (
 	inputS3URL        = "s3-url"
 )
 
-func newManager(ctx context.Context, gha *githubactions.Action) (internal.RemoteManager, error) {
+func newManager(ctx context.Context, gha *githubactions.Action) (remote.Manager, error) {
 	remoteType := gha.GetInput(inputRemoteType)
 
 	switch remoteType {
 	case "gha":
-		manager, err := github.New()
+		manager, err := githubmanager.New()
 		if err != nil {
 			gha.Errorf("Failed to access Github Actions Cache: %+v", err)
 			return nil, err
@@ -58,7 +58,7 @@ func newManager(ctx context.Context, gha *githubactions.Action) (internal.Remote
 			return nil, err
 		}
 
-		return s3.New(awsCfg, bucketName, keyPrefix, customURL != ""), nil
+		return s3manager.New(awsCfg, bucketName, keyPrefix, customURL != ""), nil
 
 	default:
 		err := errors.Errorf("unknown remote-type: %v. Only supports `gha` or `s3`", remoteType)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/isac322/buildkit-state/probe/internal"
 	"github.com/isac322/buildkit-state/probe/internal/buildkit"
+	"github.com/isac322/buildkit-state/probe/internal/remote"
 
 	"github.com/docker/docker/client"
 	"github.com/sethvargo/go-githubactions"
@@ -74,4 +75,4 @@ func run(ctx context.Context, worker Worker) error {
 	return worker(ctx, gha, bkCli, manager)
 }
 
-type Worker func(context.Context, *githubactions.Action, buildkit.Driver, internal.RemoteManager) error
+type Worker func(context.Context, *githubactions.Action, buildkit.Driver, remote.Manager) error

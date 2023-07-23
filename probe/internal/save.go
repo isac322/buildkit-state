@@ -8,6 +8,7 @@ import (
 
 	"github.com/isac322/buildkit-state/probe/internal/buildkit"
 	gha2 "github.com/isac322/buildkit-state/probe/internal/gha"
+	"github.com/isac322/buildkit-state/probe/internal/remote"
 
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-githubactions"
@@ -17,7 +18,7 @@ func SaveFromContainerToRemote(
 	ctx context.Context,
 	gha *githubactions.Action,
 	bkCli buildkit.Driver,
-	manager RemoteManager,
+	manager remote.Manager,
 ) (err error) {
 	defer func() {
 		if err != nil {
