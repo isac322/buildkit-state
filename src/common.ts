@@ -3,6 +3,7 @@ import os from 'os'
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 import * as toolCache from '@actions/tool-cache'
+import child_process from 'child_process'
 
 const toolName = 'buildkit_state'
 
@@ -88,4 +89,16 @@ export async function setDockerAPIVersionToEnv(): Promise<void> {
   if (process.env.DOCKER_API_VERSION === undefined) {
     process.env.DOCKER_API_VERSION = dockerServerVersion.stdout
   }
+}
+
+export async function spawn(
+  command: string,
+  args: readonly string[],
+  options: child_process.SpawnOptions
+): Promise<number | null> {
+  return new Promise((resolve, reject) => {
+    const proc = child_process.spawn(command, args, options)
+    proc.on('error', reject)
+    proc.on('close', resolve)
+  })
 }

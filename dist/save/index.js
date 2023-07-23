@@ -6597,12 +6597,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.setDockerAPIVersionToEnv = exports.getBinary = void 0;
+exports.spawn = exports.setDockerAPIVersionToEnv = exports.getBinary = void 0;
 const promises_1 = __importDefault(__nccwpck_require__(3292));
 const os_1 = __importDefault(__nccwpck_require__(2037));
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
 const toolCache = __importStar(__nccwpck_require__(7784));
+const child_process_1 = __importDefault(__nccwpck_require__(2081));
 const toolName = 'buildkit_state';
 async function getBinary(version) {
     const filename = getFilename();
@@ -6671,6 +6672,14 @@ async function setDockerAPIVersionToEnv() {
     }
 }
 exports.setDockerAPIVersionToEnv = setDockerAPIVersionToEnv;
+async function spawn(command, args, options) {
+    return new Promise((resolve, reject) => {
+        const proc = child_process_1.default.spawn(command, args, options);
+        proc.on('error', reject);
+        proc.on('close', resolve);
+    });
+}
+exports.spawn = spawn;
 
 
 /***/ }),
@@ -6703,12 +6712,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const child_process_1 = __importDefault(__nccwpck_require__(2081));
-const util_1 = __importDefault(__nccwpck_require__(3837));
 const core = __importStar(__nccwpck_require__(2186));
 const common_1 = __nccwpck_require__(9108);
 const package_json_1 = __nccwpck_require__(4147);
@@ -6718,9 +6722,10 @@ async function run() {
         const { toolPath, binaryName } = await (0, common_1.getBinary)(package_json_1.version);
         core.addPath(toolPath);
         await (0, common_1.setDockerAPIVersionToEnv)();
-        await util_1.default.promisify(child_process_1.default.spawn)(binaryName, ['save'], {
-            stdio: 'inherit'
-        });
+        const code = await (0, common_1.spawn)(binaryName, ['save'], { stdio: 'inherit' });
+        if (code != null || code !== 0) {
+            core.setFailed(`non zero return: ${code}`);
+        }
     }
     catch (error) {
         if (error instanceof Error) {

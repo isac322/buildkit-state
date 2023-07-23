@@ -1,7 +1,5 @@
-import child_process from 'child_process'
-import util from 'util'
 import * as core from '@actions/core'
-import {getBinary, setDockerAPIVersionToEnv} from './common'
+import {getBinary, setDockerAPIVersionToEnv, spawn} from './common'
 import {version} from '../package.json'
 
 async function run(): Promise<void> {
@@ -12,9 +10,10 @@ async function run(): Promise<void> {
 
     await setDockerAPIVersionToEnv()
 
-    await util.promisify(child_process.spawn)(binaryName, ['load'], {
-      stdio: 'inherit'
-    })
+    const code = await spawn(binaryName, ['load'], {stdio: 'inherit'})
+    if (code != null || code !== 0) {
+      core.setFailed(`non zero return: ${code}`)
+    }
   } catch (error) {
     if (error instanceof Error) {
       core.setFailed(error.message)
