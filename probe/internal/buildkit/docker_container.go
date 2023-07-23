@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 
 	"github.com/docker/docker/api/types"
@@ -85,10 +86,11 @@ func newContainerDialer(
 		if err != nil {
 			return nil, err
 		}
+		log.Printf("container exec id: %+v\n", exec.ID)
 
 		attach, err := docker.ContainerExecAttach(ctx, exec.ID, types.ExecStartCheck{})
 		if err != nil {
-			return nil, err
+			return nil, pkgerrors.WithStack(err)
 		}
 		return newHijackedNetConn(attach), nil
 	}
