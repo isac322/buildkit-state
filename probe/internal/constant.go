@@ -1,7 +1,8 @@
 package internal
 
 const (
-	BuildKitStateDir = "/var/lib/buildkit"
+	BuildKitStateSaveDir = "/var/lib/buildkit"
+	BuildKitStateLoadDir = "/var/lib"
 
 	inputPrimaryKey       = "cache-key"
 	inputSecondaryKeys    = "cache-restore-keys"

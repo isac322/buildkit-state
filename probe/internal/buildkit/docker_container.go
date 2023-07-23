@@ -2,37 +2,26 @@
 package buildkit
 
 import (
-	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
-	"strings"
-	"text/tabwriter"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/stdcopy"
 	bkclient "github.com/moby/buildkit/client"
-	"github.com/pkg/errors"
-	"github.com/tonistiigi/units"
-	"golang.org/x/exp/slices"
+	pkgerrors "github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 )
-
-var pruneTypes = []bkclient.UsageRecordType{
-	bkclient.UsageRecordTypeInternal,
-	bkclient.UsageRecordTypeFrontend,
-	bkclient.UsageRecordTypeLocalSource,
-	bkclient.UsageRecordTypeGitCheckout,
-	bkclient.UsageRecordTypeCacheMount,
-	bkclient.UsageRecordTypeRegular,
-}
 
 type dockerContainer struct {
 	docker        client.CommonAPIClient
 	builderName   string
 	containerName string
-	bkClient      *bkclient.Client
+	commonDriver
 }
 
 func NewContainerizedDriver(ctx context.Context, docker client.CommonAPIClient, builderName string) (Driver, error) {
@@ -50,7 +39,7 @@ func NewContainerizedDriver(ctx context.Context, docker client.CommonAPIClient, 
 		docker,
 		builderName,
 		containerName,
-		bkcli,
+		newCommonDriver(bkcli),
 	}, nil
 }
 
@@ -73,7 +62,7 @@ func (d *dockerContainer) Resume(ctx context.Context) error {
 		return err
 	}
 
-	d.bkClient = bkcli
+	d.commonDriver.bkClient = bkcli
 	return nil
 }
 
@@ -82,7 +71,12 @@ func newContainerDialer(docker client.ContainerAPIClient, containerName string) 
 		exec, err := docker.ContainerExecCreate(
 			ctx,
 			containerName,
-			types.ExecConfig{AttachStdin: true, Cmd: []string{"buildctl", "dial-stdio"}},
+			types.ExecConfig{
+				AttachStdin:  true,
+				AttachStdout: true,
+				AttachStderr: true,
+				Cmd:          []string{"buildctl", "dial-stdio"},
+			},
 		)
 		if err != nil {
 			return nil, err
@@ -92,40 +86,8 @@ func newContainerDialer(docker client.ContainerAPIClient, containerName string) 
 		if err != nil {
 			return nil, err
 		}
-
-		return attach.Conn, nil
+		return newHijackedNetConn(attach), nil
 	}
-}
-
-func (d *dockerContainer) PruneExcept(ctx context.Context, whitelist []string) error {
-	filters := make([]string, 0, len(pruneTypes))
-	for _, recordType := range pruneTypes {
-		rt := string(recordType)
-		if slices.Contains(whitelist, rt) {
-			continue
-		}
-		filters = append(filters, "type=="+rt)
-	}
-
-	return d.bkClient.Prune(ctx, nil, bkclient.WithFilter(filters))
-}
-
-func (d *dockerContainer) PrintDiskUsage(ctx context.Context) ([]byte, error) {
-	var usages []*bkclient.UsageInfo
-	usages, err := d.bkClient.DiskUsage(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	buf := new(bytes.Buffer)
-	tw := tabwriter.NewWriter(buf, 1, 8, 1, '\t', 0)
-	printVerbose(tw, usages)
-	printSummary(tw, usages)
-	if err = tw.Flush(); err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	return buf.Bytes(), nil
 }
 
 func (d *dockerContainer) CopyFrom(ctx context.Context, path string) (io.ReadCloser, int64, error) {
@@ -138,64 +100,56 @@ func (d *dockerContainer) CopyFrom(ctx context.Context, path string) (io.ReadClo
 }
 
 func (d *dockerContainer) CopyTo(ctx context.Context, path string, content io.Reader) error {
-	return d.docker.CopyToContainer(ctx, d.containerName, path, content, types.CopyToContainerOptions{})
+	return d.docker.CopyToContainer(
+		ctx,
+		d.containerName,
+		path,
+		content,
+		types.CopyToContainerOptions{AllowOverwriteDirWithFile: true},
+	)
 }
 
-func printKV(w io.Writer, k string, v any) {
-	fmt.Fprintf(w, "%s:\t%v\n", k, v)
+type hijackedNetConn struct {
+	net.Conn
+	errGrp        *errgroup.Group
+	decodedStdOut io.ReadCloser
 }
 
-func printVerbose(tw *tabwriter.Writer, du []*bkclient.UsageInfo) {
-	for _, di := range du {
-		printKV(tw, "ID", di.ID)
-		if len(di.Parents) > 0 {
-			printKV(tw, "Parents", strings.Join(di.Parents, ";"))
-		}
-		printKV(tw, "Created at", di.CreatedAt)
-		printKV(tw, "Mutable", di.Mutable)
-		printKV(tw, "Reclaimable", !di.InUse)
-		printKV(tw, "Shared", di.Shared)
-		printKV(tw, "Size", fmt.Sprintf("%.2f", units.Bytes(di.Size)))
-		if di.Description != "" {
-			printKV(tw, "Description", di.Description)
-		}
-		printKV(tw, "Usage count", di.UsageCount)
-		if di.LastUsedAt != nil {
-			printKV(tw, "Last used", di.LastUsedAt)
-		}
-		if di.RecordType != "" {
-			printKV(tw, "Type", di.RecordType)
-		}
+func newHijackedNetConn(res types.HijackedResponse) *hijackedNetConn {
+	errGrp := new(errgroup.Group)
+	decodedStdOut, pipeWriter := io.Pipe()
+	errGrp.Go(func() error {
+		_, err := stdcopy.StdCopy(pipeWriter, io.Discard, res.Conn)
+		return err
+	})
 
-		fmt.Fprintf(tw, "\n")
+	return &hijackedNetConn{
+		res.Conn,
+		errGrp,
+		decodedStdOut,
 	}
-
-	tw.Flush()
 }
 
-func printSummary(tw *tabwriter.Writer, du []*bkclient.UsageInfo) {
-	total := int64(0)
-	reclaimable := int64(0)
-	shared := int64(0)
-
-	for _, di := range du {
-		if di.Size > 0 {
-			total += di.Size
-			if !di.InUse {
-				reclaimable += di.Size
-			}
-		}
-		if di.Shared {
-			shared += di.Size
-		}
+func (h hijackedNetConn) Read(b []byte) (n int, err error) {
+	read, err := h.decodedStdOut.Read(b)
+	if err != nil {
+		return read, pkgerrors.WithStack(err)
 	}
-
-	if shared > 0 {
-		fmt.Fprintf(tw, "Shared:\t%.2f\n", units.Bytes(shared))
-		fmt.Fprintf(tw, "Private:\t%.2f\n", units.Bytes(total-shared))
-	}
-
-	fmt.Fprintf(tw, "Reclaimable:\t%.2f\n", units.Bytes(reclaimable))
-	fmt.Fprintf(tw, "Total:\t%.2f\n", units.Bytes(total))
-	tw.Flush()
+	return read, err
 }
+
+func (h hijackedNetConn) Close() error {
+	connErr := pkgerrors.WithStack(h.Conn.Close())
+	grpErr := pkgerrors.WithStack(h.errGrp.Wait())
+
+	if connErr != nil && grpErr != nil {
+		return errors.Join(connErr, grpErr)
+	} else if connErr != nil {
+		return connErr
+	} else if grpErr != nil {
+		return grpErr
+	}
+	return nil
+}
+
+var _ net.Conn = hijackedNetConn{}

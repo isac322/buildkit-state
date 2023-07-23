@@ -68,7 +68,7 @@ func SaveFromContainerToRemote(
 		gha.Group("Save buildkit state to remote")
 		defer gha.EndGroup()
 
-		gha.Infof("stopping buildkitd...")
+		gha.Infof("Stopping buildkitd...")
 		err = bkCli.Stop(ctx)
 		if err != nil {
 			gha.Errorf("Failed to stop buildkitd container: %+v", err)
@@ -83,6 +83,7 @@ func SaveFromContainerToRemote(
 			return
 		}
 
+		gha.Infof("Extract and compress buildkit state...")
 		var buf *bytes.Buffer
 		buf, err = CompressToZstd(ctx, bkCli, compressionLevel)
 		if err != nil {
@@ -90,6 +91,7 @@ func SaveFromContainerToRemote(
 			return
 		}
 
+		gha.Infof("Uploading to remote storage...")
 		err = manager.Save(ctx, cacheKey, buf.Bytes())
 		if err != nil {
 			gha.Errorf("Failed to save compressed buildkit sate to remote: %+v", err)
