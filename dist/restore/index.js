@@ -6597,7 +6597,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.spawn = exports.setDockerAPIVersionToEnv = exports.getBinary = void 0;
+exports.getDockerEndpoint = exports.spawn = exports.getBinary = void 0;
 const promises_1 = __importDefault(__nccwpck_require__(3292));
 const os_1 = __importDefault(__nccwpck_require__(2037));
 const core = __importStar(__nccwpck_require__(2186));
@@ -6658,20 +6658,6 @@ function getFilename() {
     }
     throw new Error(`Unsupported platform (${platform}) and architecture (${arch})`);
 }
-async function setDockerAPIVersionToEnv() {
-    const dockerServerVersion = await exec.getExecOutput('docker', [
-        'version',
-        '-f',
-        '{{.Server.APIVersion}}'
-    ]);
-    if (dockerServerVersion.exitCode !== 0) {
-        throw new Error(`Failed to get docker api version: ${dockerServerVersion.stderr}`);
-    }
-    if (process.env.DOCKER_API_VERSION === undefined) {
-        process.env.DOCKER_API_VERSION = dockerServerVersion.stdout;
-    }
-}
-exports.setDockerAPIVersionToEnv = setDockerAPIVersionToEnv;
 async function spawn(command, args, options) {
     return new Promise((resolve, reject) => {
         const proc = child_process_1.default.spawn(command, args, options);
@@ -6680,6 +6666,18 @@ async function spawn(command, args, options) {
     });
 }
 exports.spawn = spawn;
+async function getDockerEndpoint(context) {
+    const args = ['context', 'inspect', '-f', '{{.Endpoints.docker.Host}}'];
+    if (context !== '') {
+        args.push(context);
+    }
+    const result = await exec.getExecOutput('docker', args);
+    if (result.exitCode !== 0) {
+        throw new Error(`Failed to get docker host: ${result.stderr}`);
+    }
+    return result.stdout;
+}
+exports.getDockerEndpoint = getDockerEndpoint;
 
 
 /***/ }),
@@ -6721,8 +6719,13 @@ async function run() {
         core.debug(`version: ${package_json_1.version}`);
         const { toolPath, binaryName } = await (0, common_1.getBinary)(package_json_1.version);
         core.addPath(toolPath);
-        await (0, common_1.setDockerAPIVersionToEnv)();
-        const code = await (0, common_1.spawn)(binaryName, ['load'], { stdio: 'inherit' });
+        const context = core.getInput('docker-context');
+        const dockerEndpoint = await (0, common_1.getDockerEndpoint)(context);
+        const args = ['load'];
+        if (dockerEndpoint !== '') {
+            args.push('--docker-endpoint', dockerEndpoint);
+        }
+        const code = await (0, common_1.spawn)(binaryName, args, { stdio: 'inherit' });
         if (code !== null && code !== 0) {
             core.setFailed(`non zero return: ${code}`);
         }

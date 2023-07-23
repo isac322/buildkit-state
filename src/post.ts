@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import {getBinary, setDockerAPIVersionToEnv, spawn} from './common'
+import {getBinary, getDockerEndpoint, spawn} from './common'
 import {version} from '../package.json'
 
 async function run(): Promise<void> {
@@ -8,9 +8,14 @@ async function run(): Promise<void> {
     const {toolPath, binaryName} = await getBinary(version)
     core.addPath(toolPath)
 
-    await setDockerAPIVersionToEnv()
+    const context = core.getInput('docker-context')
+    const dockerEndpoint = await getDockerEndpoint(context)
 
-    const code = await spawn(binaryName, ['save'], {stdio: 'inherit'})
+    const args = ['save']
+    if (dockerEndpoint !== '') {
+      args.push('--docker-endpoint', dockerEndpoint)
+    }
+    const code = await spawn(binaryName, args, {stdio: 'inherit'})
     if (code !== null && code !== 0) {
       core.setFailed(`non zero return: ${code}`)
     }

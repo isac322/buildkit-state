@@ -75,22 +75,6 @@ function getFilename(): string {
   )
 }
 
-export async function setDockerAPIVersionToEnv(): Promise<void> {
-  const dockerServerVersion = await exec.getExecOutput('docker', [
-    'version',
-    '-f',
-    '{{.Server.APIVersion}}'
-  ])
-  if (dockerServerVersion.exitCode !== 0) {
-    throw new Error(
-      `Failed to get docker api version: ${dockerServerVersion.stderr}`
-    )
-  }
-  if (process.env.DOCKER_API_VERSION === undefined) {
-    process.env.DOCKER_API_VERSION = dockerServerVersion.stdout
-  }
-}
-
 export async function spawn(
   command: string,
   args: readonly string[],
@@ -101,4 +85,18 @@ export async function spawn(
     proc.on('error', reject)
     proc.on('close', resolve)
   })
+}
+
+export async function getDockerEndpoint(context: string): Promise<string> {
+  const args = ['context', 'inspect', '-f', '{{.Endpoints.docker.Host}}']
+  if (context !== '') {
+    args.push(context)
+  }
+  const result = await exec.getExecOutput('docker', args)
+
+  if (result.exitCode !== 0) {
+    throw new Error(`Failed to get docker host: ${result.stderr}`)
+  }
+
+  return result.stdout
 }
