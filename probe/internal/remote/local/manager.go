@@ -117,7 +117,7 @@ func (m Manager) Save(_ context.Context, cacheKey string, data []byte) error {
 		return errors.WithStack(err)
 	}
 
-	fp, err := os.OpenFile(filepath.Join(m.dest, version, cacheKey), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0660)
+	fp, err := os.OpenFile(filepath.Join(m.dest, version, cacheKey), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o660)
 	if err != nil {
 		return errors.WithStack(err)
 	}

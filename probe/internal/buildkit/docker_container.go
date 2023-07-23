@@ -66,7 +66,10 @@ func (d *dockerContainer) Resume(ctx context.Context) error {
 	return nil
 }
 
-func newContainerDialer(docker client.ContainerAPIClient, containerName string) func(ctx context.Context, _ string) (net.Conn, error) {
+func newContainerDialer(
+	docker client.ContainerAPIClient,
+	containerName string,
+) func(ctx context.Context, _ string) (net.Conn, error) {
 	return func(ctx context.Context, _ string) (net.Conn, error) {
 		exec, err := docker.ContainerExecCreate(
 			ctx,
