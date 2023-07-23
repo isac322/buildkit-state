@@ -6723,7 +6723,7 @@ async function run() {
         core.addPath(toolPath);
         await (0, common_1.setDockerAPIVersionToEnv)();
         const code = await (0, common_1.spawn)(binaryName, ['save'], { stdio: 'inherit' });
-        if (code != null || code !== 0) {
+        if (code !== null && code !== 0) {
             core.setFailed(`non zero return: ${code}`);
         }
     }

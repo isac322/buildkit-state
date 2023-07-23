@@ -11,7 +11,7 @@ async function run(): Promise<void> {
     await setDockerAPIVersionToEnv()
 
     const code = await spawn(binaryName, ['save'], {stdio: 'inherit'})
-    if (code != null || code !== 0) {
+    if (code !== null && code !== 0) {
       core.setFailed(`non zero return: ${code}`)
     }
   } catch (error) {
