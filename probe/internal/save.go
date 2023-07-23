@@ -3,12 +3,10 @@ package internal
 import (
 	"bytes"
 	"context"
-	"strconv"
-	"strings"
-
 	"github.com/isac322/buildkit-state/probe/internal/buildkit"
 	gha2 "github.com/isac322/buildkit-state/probe/internal/gha"
 	"github.com/isac322/buildkit-state/probe/internal/remote"
+	"strconv"
 
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-githubactions"
@@ -37,7 +35,7 @@ func SaveFromContainerToRemote(
 	}
 
 	cacheKey := gha.GetInput(inputPrimaryKey)
-	restoredCacheKey := gha.Getenv("STATE_" + strings.ToUpper(strings.ReplaceAll(stateLoadedCacheKey, " ", "_")))
+	restoredCacheKey := gha.Getenv("STATE_" + stateLoadedCacheKey)
 	gha.Infof("restoredCacheKey: %s, cacheKey: %s", restoredCacheKey, cacheKey)
 
 	if cacheKey == restoredCacheKey {
