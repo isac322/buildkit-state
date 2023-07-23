@@ -32,6 +32,9 @@ inputs:
   save-on-failure:
     description: Whether to save cache even if job fails.
     default: "false"
+  resume-builder:
+    description: Resume buildx builder after successfully load cache.
+    default: "false"
   compression-level:
     description: Zstd compression level (from 1 to 22)
     default: "3"
