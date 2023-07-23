@@ -8,11 +8,6 @@ on:
       - .github/workflows/ci.yaml
 
   workflow_dispatch:
-    inputs:
-      version:
-        required: true
-        type: string
-        description: For tag & release
 
 
 jobs:
@@ -58,58 +53,17 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    if: github.ref_name != 'master'
     steps:
       - uses: actions/checkout@v3
 
-      - name: Build
-        uses: crazy-max/ghaction-xgo@v2
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build for testing
+        uses: docker/build-push-action@v4
         with:
-          go_version: '1.20'
-          dest: build
-          pkg: cmd/probe
-          prefix: buildkit-state
-          targets: linux/amd64,linux/arm,linux/arm64,darwin/amd64,darwin/arm64,windows/amd64
-          v: true
-          x: false
-          ldflags: -extldflags -static -s -w
-          trimpath: true
-          working_dir: probe
-
-      - name: Check binaries
-        # language=Bash
-        run: ls -ahl probe/build
-
-      - name: Run UPX
-        if: github.event_name == 'workflow_dispatch' || github.ref_name == 'main'
-        uses: crazy-max/ghaction-upx@v2
-        with:
-          version: latest
-          files: |
-            probe/build/*
-          args: --lzma --ultra-brute
-
-      - name: Check binaries
-        if: github.event_name == 'workflow_dispatch' || github.ref_name == 'main'
-        # language=Bash
-        run: ls -ahl probe/build
-
-      - name: Check if version has been updated
-        if: github.event_name == 'push' || github.ref_name == 'main'
-        id: check
-        uses: EndBug/version-check@v2
-
-      - name: Create release
-        if: github.event_name == 'workflow_dispatch' || (github.ref_name == 'main' && steps.check.outputs.changed == 'true')
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: 'v${{ steps.check.outputs.version || inputs.version }}'
-          files: |
-            probe/build/*
-          generate_release_notes: true
-          fail_on_unmatched_files: true
-
-      - name: Update tag
-        if: github.event_name == 'workflow_dispatch' || (github.ref_name == 'main' && steps.check.outputs.changed == 'true')
-        uses: actions/publish-action@v0.2.2
-        with:
-          source-tag: 'v${{ steps.check.outputs.version || inputs.version }}'
+          push: false
+          context: "{{defaultContext}}:probe"
+          target: builder
