@@ -27,12 +27,6 @@ func SaveFromContainerToRemote(
 	}()
 
 	if gha.Getenv("RUNNER_DEBUG") == "1" {
-		err := bkCli.Resume(ctx)
-		if err != nil {
-			gha.Errorf("Failed to resume buildkit daemon: %+v", err)
-			return err
-		}
-
 		usage, err := bkCli.PrintDiskUsage(ctx)
 		if err != nil {
 			gha.Errorf("Failed to print disk usage: %+v", err)
