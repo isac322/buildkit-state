@@ -10,6 +10,7 @@ import (
 	localmanager "github.com/isac322/buildkit-state/probe/internal/remote/local"
 
 	"github.com/docker/docker/client"
+	"github.com/goccy/go-json"
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-githubactions"
 	"github.com/spf13/cobra"
@@ -60,7 +61,7 @@ func run(cmd *cobra.Command, args []string) error {
 	gha := githubactions.New(githubactions.WithGetenv(func(key string) string {
 		switch key {
 		case "INPUT_RESUME-BUILDER":
-			return "false"
+			return "true"
 		case "INPUT_CACHE-KEY":
 			return primaryKey
 		case "INPUT_CACHE-RESTORE-KEYS":
@@ -84,12 +85,19 @@ func run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	gha.Infof("Printing docker info...")
 	info, err := docker.Info(ctx)
 	if err != nil {
 		gha.Errorf("Failed info docker: %+v", err)
 		return err
 	}
-	gha.Infof("%+v", info)
+	escape, err := json.MarshalIndentWithOption(info, "", "    ", json.DisableHTMLEscape())
+	if err != nil {
+		err = errors.WithStack(err)
+		gha.Errorf("Failed marshal docker info into json: %+v", err)
+		return err
+	}
+	gha.Infof("%+s", string(escape))
 
 	bkCli, err := buildkit.NewContainerizedDriver(ctx, docker, builderName)
 	if err != nil {
