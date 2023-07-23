@@ -4,13 +4,11 @@ import (
 	"context"
 
 	"github.com/isac322/buildkit-state/probe/internal"
-	"github.com/isac322/buildkit-state/probe/internal/buildkit"
 	"github.com/isac322/buildkit-state/probe/internal/github"
 	"github.com/isac322/buildkit-state/probe/internal/s3"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-githubactions"
 )
@@ -67,25 +65,4 @@ func newManager(ctx context.Context, gha *githubactions.Action) (manager interna
 		gha.Errorf(err.Error())
 		return nil, err
 	}
-}
-
-func newDependencies(ctx context.Context) (*githubactions.Action, buildkit.Driver, internal.RemoteManager, error) {
-	gha := githubactions.New()
-	manager, err := newManager(ctx, gha)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	docker, err := client.NewClientWithOpts(client.FromEnv)
-	if err != nil {
-		gha.Errorf("Failed connect docker: %+v", err)
-		return nil, nil, nil, err
-	}
-
-	builderName := gha.GetInput(inputBuildxName)
-	bkCli, err := buildkit.NewContainerizedDriver(ctx, docker, builderName)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	return gha, bkCli, manager, nil
 }
