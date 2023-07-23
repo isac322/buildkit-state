@@ -98,5 +98,5 @@ export async function getDockerEndpoint(context: string): Promise<string> {
     throw new Error(`Failed to get docker host: ${result.stderr}`)
   }
 
-  return result.stdout
+  return result.stdout.trim()
 }
