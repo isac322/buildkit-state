@@ -78,11 +78,18 @@ func run(cmd *cobra.Command, args []string) error {
 		}
 	}))
 	manager := localmanager.New(destinationPath)
-	docker, err := client.NewClientWithOpts(client.FromEnv)
+	docker, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		gha.Errorf("Failed connect docker: %+v", err)
 		return err
 	}
+
+	info, err := docker.Info(ctx)
+	if err != nil {
+		gha.Errorf("Failed info docker: %+v", err)
+		return err
+	}
+	gha.Infof("%+v", info)
 
 	bkCli, err := buildkit.NewContainerizedDriver(ctx, docker, builderName)
 	if err != nil {

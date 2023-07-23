@@ -59,10 +59,19 @@ func run(ctx context.Context, worker Worker) error {
 		return err
 	}
 
-	docker, err := client.NewClientWithOpts(client.FromEnv)
+	docker, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		gha.Errorf("Failed connect docker: %+v", err)
 		return err
+	}
+
+	if gha.Getenv("RUNNER_DEBUG") == "1" {
+		info, err := docker.Info(ctx)
+		if err != nil {
+			gha.Errorf("Failed info docker: %+v", err)
+			return err
+		}
+		gha.Infof("%+v", info)
 	}
 
 	builderName := gha.GetInput(inputBuildxName)
