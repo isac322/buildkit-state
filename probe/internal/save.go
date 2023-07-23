@@ -3,10 +3,11 @@ package internal
 import (
 	"bytes"
 	"context"
+	"strconv"
+
 	"github.com/isac322/buildkit-state/probe/internal/buildkit"
 	gha2 "github.com/isac322/buildkit-state/probe/internal/gha"
 	"github.com/isac322/buildkit-state/probe/internal/remote"
-	"strconv"
 
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-githubactions"
