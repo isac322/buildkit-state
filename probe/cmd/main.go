@@ -44,14 +44,14 @@ func main() {
 }
 
 func load(cmd *cobra.Command, _ []string) error {
-	return run(cmd.Context(), false)
+	return run(cmd.Context(), internal.LoadFromRemoteToContainer)
 }
 
 func save(cmd *cobra.Command, _ []string) error {
-	return run(cmd.Context(), true)
+	return run(cmd.Context(), internal.SaveFromContainerToRemote)
 }
 
-func run(ctx context.Context, isSave bool) error {
+func run(ctx context.Context, worker Worker) error {
 	gha := githubactions.New()
 	manager, err := newManager(ctx, gha)
 	if err != nil {
@@ -67,22 +67,11 @@ func run(ctx context.Context, isSave bool) error {
 	builderName := gha.GetInput(inputBuildxName)
 	bkCli, err := buildkit.NewContainerizedDriver(ctx, docker, builderName)
 	if err != nil {
+		gha.Errorf("Failed to connect buildkit: %+v", err)
 		return err
 	}
 
-	if isSave {
-		err = internal.SaveFromContainerToRemote(ctx, gha, bkCli, manager)
-		if err != nil {
-			gha.Errorf("Failed to save buildkit state: %+v", err)
-			return err
-		}
-	} else {
-		err = internal.LoadFromRemoteToContainer(ctx, gha, bkCli, manager)
-		if err != nil {
-			gha.Errorf("Failed to restore buildkit state: %+v", err)
-			return err
-		}
-	}
-
-	return nil
+	return worker(ctx, gha, bkCli, manager)
 }
+
+type Worker func(context.Context, *githubactions.Action, buildkit.Driver, internal.RemoteManager) error

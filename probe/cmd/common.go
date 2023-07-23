@@ -21,12 +21,12 @@ const (
 	inputS3URL        = "s3-url"
 )
 
-func newManager(ctx context.Context, gha *githubactions.Action) (manager internal.RemoteManager, err error) {
+func newManager(ctx context.Context, gha *githubactions.Action) (internal.RemoteManager, error) {
 	remoteType := gha.GetInput(inputRemoteType)
 
 	switch remoteType {
 	case "gha":
-		manager, err = github.New()
+		manager, err := github.New()
 		if err != nil {
 			gha.Errorf("Failed to access Github Actions Cache: %+v", err)
 			return nil, err
@@ -36,7 +36,7 @@ func newManager(ctx context.Context, gha *githubactions.Action) (manager interna
 	case "s3":
 		bucketName := gha.GetInput(inputS3BucketName)
 		if bucketName == "" {
-			err = errors.Errorf(`"%s" is required`, inputS3BucketName)
+			err := errors.Errorf(`"%s" is required`, inputS3BucketName)
 			gha.Errorf(err.Error())
 			return nil, err
 		}
@@ -61,7 +61,7 @@ func newManager(ctx context.Context, gha *githubactions.Action) (manager interna
 		return s3.New(awsCfg, bucketName, keyPrefix, customURL != ""), nil
 
 	default:
-		err = errors.Errorf("unknown remote-type: %v. Only supports `gha` or `s3`", remoteType)
+		err := errors.Errorf("unknown remote-type: %v. Only supports `gha` or `s3`", remoteType)
 		gha.Errorf(err.Error())
 		return nil, err
 	}

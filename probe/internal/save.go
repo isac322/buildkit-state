@@ -13,16 +13,18 @@ import (
 	"github.com/sethvargo/go-githubactions"
 )
 
-type Saver interface {
-	Save(ctx context.Context, cacheKey string, data []byte) error
-}
-
 func SaveFromContainerToRemote(
 	ctx context.Context,
 	gha *githubactions.Action,
 	bkCli buildkit.Driver,
-	saver Saver,
+	manager RemoteManager,
 ) (err error) {
+	defer func() {
+		if err != nil {
+			gha.Errorf("Failed to load/save buildkit state: %+v", err)
+		}
+	}()
+
 	cacheKey := gha.GetInput(inputPrimaryKey)
 	restoredCacheKey := gha.Getenv("STATE_" + strings.ToUpper(strings.ReplaceAll(stateLoadedCacheKey, " ", "_")))
 
@@ -87,7 +89,7 @@ func SaveFromContainerToRemote(
 			return
 		}
 
-		err = saver.Save(ctx, cacheKey, buf.Bytes())
+		err = manager.Save(ctx, cacheKey, buf.Bytes())
 		if err != nil {
 			gha.Errorf("Failed to save compressed buildkit sate to remote: %+v", err)
 			return

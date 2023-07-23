@@ -163,7 +163,4 @@ func (m Manager) buildS3Key(key string) string {
 	return path.Join(version, m.keyPrefix, key)
 }
 
-var (
-	_ internal.Loader = Manager{}
-	_ internal.Saver  = Manager{}
-)
+var _ internal.RemoteManager = Manager{}

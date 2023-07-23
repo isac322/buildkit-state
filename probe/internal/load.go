@@ -19,16 +19,18 @@ type LoadedCache struct {
 	Extra map[string]any
 }
 
-type Loader interface {
-	Load(ctx context.Context, primaryKey string, secondaryKeys []string) (mo.Option[LoadedCache], error)
-}
-
 func LoadFromRemoteToContainer(
 	ctx context.Context,
 	gha *githubactions.Action,
 	bkCli buildkit.Driver,
-	loader Loader,
+	manager RemoteManager,
 ) (err error) {
+	defer func() {
+		if err != nil {
+			gha.Errorf("Failed to load/save buildkit state: %+v", err)
+		}
+	}()
+
 	var loaded LoadedCache
 	var found bool
 
@@ -42,7 +44,7 @@ func LoadFromRemoteToContainer(
 		gha.Debugf("secondary keys: %v", secondaryKeys)
 
 		var cache mo.Option[LoadedCache]
-		cache, err = loader.Load(ctx, primaryKey, secondaryKeys)
+		cache, err = manager.Load(ctx, primaryKey, secondaryKeys)
 		if err != nil {
 			gha.Errorf("Failed to load cache from remote: %+v", err)
 			return

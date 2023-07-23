@@ -1,6 +1,12 @@
 package internal
 
+import (
+	"context"
+
+	"github.com/samber/mo"
+)
+
 type RemoteManager interface {
-	Loader
-	Saver
+	Load(ctx context.Context, primaryKey string, secondaryKeys []string) (mo.Option[LoadedCache], error)
+	Save(ctx context.Context, cacheKey string, data []byte) error
 }

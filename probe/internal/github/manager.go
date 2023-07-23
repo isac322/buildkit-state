@@ -50,10 +50,7 @@ func (m Manager) Save(ctx context.Context, cacheKey string, data []byte) error {
 	return errors.WithStack(m.gha.Save(ctx, cacheKey, actionscache.NewBlob(data)))
 }
 
-var (
-	_ internal.Loader = Manager{}
-	_ internal.Saver  = Manager{}
-)
+var _ internal.RemoteManager = Manager{}
 
 type wrappedBody struct {
 	actionscache.ReaderAtCloser
