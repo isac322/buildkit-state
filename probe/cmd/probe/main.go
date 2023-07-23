@@ -31,11 +31,21 @@ var (
 		Short: "Extract and update buildkit state to remote",
 		RunE:  save,
 	}
+
+	dockerEndpoint string
 )
 
 func init() {
 	rootCmd.AddCommand(loadCmd)
 	rootCmd.AddCommand(saveCmd)
+
+	rootCmd.PersistentFlags().StringVarP(
+		&dockerEndpoint,
+		"docker-endpoint",
+		"e",
+		client.DefaultDockerHost,
+		"Endpoint of docker daemon",
+	)
 }
 
 func main() {
@@ -59,13 +69,19 @@ func run(ctx context.Context, worker Worker) error {
 		return err
 	}
 
-	docker, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	gha.Infof("Connecting to docker...")
+	docker, err := client.NewClientWithOpts(
+		client.FromEnv,
+		client.WithAPIVersionNegotiation(),
+		client.WithHost(dockerEndpoint),
+	)
 	if err != nil {
 		gha.Errorf("Failed connect docker: %+v", err)
 		return err
 	}
 
 	if gha.Getenv("RUNNER_DEBUG") == "1" {
+		gha.Infof("Printing docker info...")
 		info, err := docker.Info(ctx)
 		if err != nil {
 			gha.Errorf("Failed info docker: %+v", err)
@@ -74,6 +90,7 @@ func run(ctx context.Context, worker Worker) error {
 		gha.Infof("%+v", info)
 	}
 
+	gha.Infof("Connecting to buildkit daemon...")
 	builderName := gha.GetInput(inputBuildxName)
 	bkCli, err := buildkit.NewContainerizedDriver(ctx, docker, builderName)
 	if err != nil {
