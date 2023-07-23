@@ -23,9 +23,13 @@ RUN --mount=type=bind,source=go.mod,target=/app/go.mod \
     && xx-verify --static "/release/$(xx-info os)-$(xx-info arch)"
 
 FROM --platform=$BUILDPLATFORM alpine as compressor
+ARG TARGETPLATFORM
 WORKDIR /release
 COPY --from=builder /release ./
-RUN apk add upx && upx --lzma --best *
+RUN if [ "$TARGETPLATFORM" != 'windows/arm64' ]; then  \
+      apk add upx \
+      && upx --lzma --best *; \
+    fi
 
 FROM scratch
 COPY --link --from=compressor /release ./
