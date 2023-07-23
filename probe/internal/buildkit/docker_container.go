@@ -35,14 +35,23 @@ type dockerContainer struct {
 	bkClient      *bkclient.Client
 }
 
-func NewContainerizedDriver(docker client.CommonAPIClient, builderName string) Driver {
-	d := &dockerContainer{
+func NewContainerizedDriver(ctx context.Context, docker client.CommonAPIClient, builderName string) (Driver, error) {
+	containerName := fmt.Sprintf("buildx_buildkit_%s0", builderName)
+	bkcli, err := bkclient.New(
+		ctx,
+		"",
+		bkclient.WithContextDialer(newContainerDialer(docker, containerName)),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dockerContainer{
 		docker,
 		builderName,
-		fmt.Sprintf("buildx_buildkit_%s0", builderName),
-		nil,
-	}
-	return d
+		containerName,
+		bkcli,
+	}, nil
 }
 
 func (d *dockerContainer) Stop(ctx context.Context) error {
@@ -58,23 +67,7 @@ func (d *dockerContainer) Resume(ctx context.Context) error {
 	bkcli, err := bkclient.New(
 		ctx,
 		"",
-		bkclient.WithContextDialer(func(ctx context.Context, _ string) (net.Conn, error) {
-			exec, err := d.docker.ContainerExecCreate(
-				ctx,
-				d.containerName,
-				types.ExecConfig{AttachStdin: true, Cmd: []string{"buildctl", "dial-stdio"}},
-			)
-			if err != nil {
-				return nil, err
-			}
-
-			attach, err := d.docker.ContainerExecAttach(ctx, exec.ID, types.ExecStartCheck{})
-			if err != nil {
-				return nil, err
-			}
-
-			return attach.Conn, nil
-		}),
+		bkclient.WithContextDialer(newContainerDialer(d.docker, d.containerName)),
 	)
 	if err != nil {
 		return err
@@ -82,6 +75,26 @@ func (d *dockerContainer) Resume(ctx context.Context) error {
 
 	d.bkClient = bkcli
 	return nil
+}
+
+func newContainerDialer(docker client.ContainerAPIClient, containerName string) func(ctx context.Context, _ string) (net.Conn, error) {
+	return func(ctx context.Context, _ string) (net.Conn, error) {
+		exec, err := docker.ContainerExecCreate(
+			ctx,
+			containerName,
+			types.ExecConfig{AttachStdin: true, Cmd: []string{"buildctl", "dial-stdio"}},
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		attach, err := docker.ContainerExecAttach(ctx, exec.ID, types.ExecStartCheck{})
+		if err != nil {
+			return nil, err
+		}
+
+		return attach.Conn, nil
+	}
 }
 
 func (d *dockerContainer) PruneExcept(ctx context.Context, whitelist []string) error {

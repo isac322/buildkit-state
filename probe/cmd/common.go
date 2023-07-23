@@ -83,6 +83,9 @@ func newDependencies(ctx context.Context) (*githubactions.Action, buildkit.Drive
 	}
 
 	builderName := gha.GetInput(inputBuildxName)
-	bkCli := buildkit.NewContainerizedDriver(docker, builderName)
+	bkCli, err := buildkit.NewContainerizedDriver(ctx, docker, builderName)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	return gha, bkCli, manager, nil
 }
