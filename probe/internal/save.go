@@ -38,6 +38,7 @@ func SaveFromContainerToRemote(
 
 	cacheKey := gha.GetInput(inputPrimaryKey)
 	restoredCacheKey := gha.Getenv("STATE_" + strings.ToUpper(strings.ReplaceAll(stateLoadedCacheKey, " ", "_")))
+	gha.Infof("restoredCacheKey: %s, cacheKey: %s", restoredCacheKey, cacheKey)
 
 	if cacheKey == restoredCacheKey {
 		rewriteCache, err := strconv.ParseBool(gha.GetInput(inputRewriteCache))
