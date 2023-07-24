@@ -13,7 +13,7 @@ async function loadCache(
   return new Promise((resolve, reject) => {
     const zstdArgs = ['-T0', '-d', '--stdout', '--force', '--', cachePath]
     if (zstdWindowSize !== null) {
-      zstdArgs.push(`--long=${zstdWindowSize}`)
+      zstdArgs.splice(1, 0, `--long=${zstdWindowSize}`)
     }
     const zstdProc = child_process.spawn('zstd', zstdArgs, {
       stdio: ['ignore', 'pipe', 'inherit']
