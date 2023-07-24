@@ -2,37 +2,40 @@ package internal
 
 import (
 	"context"
-	"io"
 	"strconv"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
-	bkclient "github.com/moby/buildkit/client"
+	"github.com/isac322/buildkit-state/probe/internal/buildkit"
+	gha2 "github.com/isac322/buildkit-state/probe/internal/gha"
+	"github.com/isac322/buildkit-state/probe/internal/remote"
+
 	"github.com/pkg/errors"
 	"github.com/samber/mo"
 	"github.com/sethvargo/go-githubactions"
 )
 
-type LoadedCache struct {
-	Key   string
-	Data  io.ReadCloser
-	Extra map[string]any
-}
-
-type Loader interface {
-	Load(ctx context.Context, primaryKey string, secondaryKeys []string) (mo.Option[LoadedCache], error)
-}
-
 func LoadFromRemoteToContainer(
 	ctx context.Context,
 	gha *githubactions.Action,
-	docker client.CommonAPIClient,
-	buildkit *bkclient.Client,
-	builderName string,
-	loader Loader,
+	bkCli buildkit.Driver,
+	manager remote.Manager,
 ) (err error) {
-	var loaded LoadedCache
+	defer func() {
+		if err != nil {
+			gha.Errorf("Failed to load/save buildkit state: %+v", err)
+		}
+	}()
+
+	if gha.Getenv("RUNNER_DEBUG") == "1" {
+		usage, err := bkCli.PrintDiskUsage(ctx)
+		if err != nil {
+			gha.Errorf("Failed to print disk usage: %+v", err)
+			return err
+		}
+
+		gha.Debugf(string(usage))
+	}
+
+	var loaded remote.LoadedCache
 	var found bool
 
 	func() {
@@ -41,11 +44,11 @@ func LoadFromRemoteToContainer(
 
 		primaryKey := gha.GetInput(inputPrimaryKey)
 		gha.Debugf("primary key: %v", primaryKey)
-		secondaryKeys := getMultilineInput(gha, inputSecondaryKeys)
+		secondaryKeys := gha2.GetMultilineInput(gha, inputSecondaryKeys)
 		gha.Debugf("secondary keys: %v", secondaryKeys)
 
-		var cache mo.Option[LoadedCache]
-		cache, err = loader.Load(ctx, primaryKey, secondaryKeys)
+		var cache mo.Option[remote.LoadedCache]
+		cache, err = manager.Load(ctx, primaryKey, secondaryKeys)
 		if err != nil {
 			gha.Errorf("Failed to load cache from remote: %+v", err)
 			return
@@ -67,21 +70,20 @@ func LoadFromRemoteToContainer(
 	}
 
 	gha.SaveState(stateLoadedCacheKey, loaded.Key)
-	containerName := BuildKitContainerNameFromBuilder(builderName)
 
 	func() {
 		gha.Group("Load cache to docker")
 		defer gha.EndGroup()
 
 		gha.Infof("stopping buildkitd...")
-		err = docker.ContainerStop(ctx, containerName, container.StopOptions{})
+		err = bkCli.Stop(ctx)
 		if err != nil {
 			gha.Errorf("Failed to stop buildkitd container: %+v", err)
 			return
 		}
 
 		gha.Infof("restoring cache into buildkitd...")
-		err = DecompressZstdTo(ctx, docker, containerName, loaded.Data)
+		err = DecompressZstdTo(ctx, bkCli, loaded.Data)
 		if err != nil {
 			gha.Errorf("Failed to restore cache into buildkitd: %+v", err)
 			return
@@ -106,13 +108,19 @@ func LoadFromRemoteToContainer(
 		defer gha.EndGroup()
 
 		gha.Infof("starting buildkitd...")
-		err = docker.ContainerStart(ctx, containerName, types.ContainerStartOptions{})
+		err = bkCli.Resume(ctx)
 		if err != nil {
 			gha.Errorf("Failed to resume buildkitd container: %+v", err)
 			return
 		}
 
-		err = printDiskUsage(ctx, gha, buildkit)
+		var usage []byte
+		usage, err = bkCli.PrintDiskUsage(ctx)
+		if err != nil {
+			gha.Errorf("Failed to print disk usage: %+v", err)
+			return
+		}
+		gha.Infof(string(usage))
 	}()
 
 	return err

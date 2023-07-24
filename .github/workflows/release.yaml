@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - probe/**
+      - package.json
+      - .github/workflows/release.yaml
+
+  workflow_dispatch:
+    inputs:
+      version:
+        required: true
+        type: string
+        description: Version for tag & release
+
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Load buildkit state
+        uses: isac322/buildkit-state@v2
+        with:
+          buildx-name: ${{ steps.buildx.outputs.name }}
+
+      - name: Build
+        uses: docker/build-push-action@v4
+        with:
+          push: false
+          context: "{{defaultContext}}:probe"
+          outputs: type=local,dest=build
+          platforms: |
+            linux/arm64
+            linux/amd64
+            darwin/arm64
+            darwin/amd64
+            windows/arm64
+            windows/amd64
+
+      - name: Check and rename binaries
+        # language=Bash
+        run: |
+          ls -ahl probe/build
+          find probe/build -type f -wholename 'probe/build/windows_*/*' -exec mv {} {}.exe \;
+
+      - name: Check if version has been updated
+        id: check
+        uses: EndBug/version-check@v2
+
+      - name: Create release
+        if: github.event_name == 'workflow_dispatch' || steps.check.outputs.changed == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: 'v${{ steps.check.outputs.version || inputs.version }}'
+          files: |
+            probe/build/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+
+      - name: Update tag
+        if: github.event_name == 'workflow_dispatch' || steps.check.outputs.changed == 'true'
+        uses: actions/publish-action@v0.2.2
+        with:
+          source-tag: 'v${{ steps.check.outputs.version || inputs.version }}'

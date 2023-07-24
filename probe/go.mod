@@ -10,6 +10,8 @@ require (
 	github.com/aws/smithy-go v1.13.5
 	github.com/caarlos0/env/v9 v9.0.0
 	github.com/docker/docker v24.0.4+incompatible
+	github.com/goccy/go-json v0.10.2
+	github.com/klauspost/compress v1.16.7
 	github.com/moby/buildkit v0.12.0
 	github.com/pkg/errors v0.9.1
 	github.com/samber/mo v1.8.0
@@ -18,7 +20,6 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/tonistiigi/go-actions-cache v0.0.0-20220404170428-0bdeb6e1eac7
 	github.com/tonistiigi/units v0.0.0-20180711220420-6950e57a87ea
-	github.com/valyala/gozstd v1.20.1
 	go.uber.org/automaxprocs v1.5.2
 	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1
 	golang.org/x/sync v0.3.0
@@ -44,7 +45,6 @@ require (
 	github.com/containerd/typeurl/v2 v2.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
-	github.com/docker/cli v24.0.2+incompatible // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect

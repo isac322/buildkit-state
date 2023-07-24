@@ -1,10 +1,10 @@
-package github
+package githubmanager
 
 import (
 	"context"
 	"io"
 
-	"github.com/isac322/buildkit-state/probe/internal"
+	"github.com/isac322/buildkit-state/probe/internal/remote"
 
 	"github.com/pkg/errors"
 	"github.com/samber/mo"
@@ -27,19 +27,19 @@ func (m Manager) Load(
 	ctx context.Context,
 	primaryKey string,
 	secondaryKeys []string,
-) (mo.Option[internal.LoadedCache], error) {
+) (mo.Option[remote.LoadedCache], error) {
 	keys := make([]string, 0, 1+len(secondaryKeys))
 	keys = append(keys, primaryKey)
 	keys = append(keys, secondaryKeys...)
 	cache, err := m.gha.Load(ctx, keys...)
 	if err != nil {
-		return mo.None[internal.LoadedCache](), errors.WithStack(err)
+		return mo.None[remote.LoadedCache](), errors.WithStack(err)
 	}
 	if cache == nil {
-		return mo.None[internal.LoadedCache](), nil
+		return mo.None[remote.LoadedCache](), nil
 	}
 
-	return mo.Some(internal.LoadedCache{
+	return mo.Some(remote.LoadedCache{
 		Key:   cache.Key,
 		Data:  &wrappedBody{cache.Download(ctx), 0},
 		Extra: nil,
@@ -50,10 +50,7 @@ func (m Manager) Save(ctx context.Context, cacheKey string, data []byte) error {
 	return errors.WithStack(m.gha.Save(ctx, cacheKey, actionscache.NewBlob(data)))
 }
 
-var (
-	_ internal.Loader = Manager{}
-	_ internal.Saver  = Manager{}
-)
+var _ remote.Manager = Manager{}
 
 type wrappedBody struct {
 	actionscache.ReaderAtCloser

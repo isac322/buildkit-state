@@ -6597,15 +6597,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getBinary = void 0;
+exports.getDockerEndpoint = exports.spawn = exports.getBinary = void 0;
+const promises_1 = __importDefault(__nccwpck_require__(3292));
 const os_1 = __importDefault(__nccwpck_require__(2037));
 const core = __importStar(__nccwpck_require__(2186));
+const exec = __importStar(__nccwpck_require__(1514));
 const toolCache = __importStar(__nccwpck_require__(7784));
-const path_1 = __importDefault(__nccwpck_require__(1017));
-const binaryPrefix = 'buildkit-state';
+const child_process_1 = __importDefault(__nccwpck_require__(2081));
 const toolName = 'buildkit_state';
 async function getBinary(version) {
     const filename = getFilename();
+    version = 'fix-tool-cache';
     const cachedPath = toolCache.find(toolName, version);
     core.debug(`cached path: ${cachedPath}`);
     if (cachedPath) {
@@ -6614,11 +6616,14 @@ async function getBinary(version) {
     }
     core.debug(`filename: ${filename}`);
     core.info(`Downloading ${filename}...`);
-    const downPath = await toolCache.downloadTool(`https://github.com/isac322/buildkit-state/releases/download/v${version}/${filename}`);
+    const downPath = await toolCache.downloadTool(`https://github.com/isac322/buildkit-state/releases/download/${version}/${filename}`);
+    await promises_1.default.chmod(downPath, 0o755);
     core.debug(`downloaded path: ${downPath}`);
     core.info(`Caching ${filename} for future usage...`);
+    const toolPath = await toolCache.cacheFile(downPath, filename, toolName, version);
+    core.debug(`toolPath: ${toolPath}`);
     return {
-        toolPath: await toolCache.cacheFile(path_1.default.basename(downPath), filename, toolName, version),
+        toolPath,
         binaryName: filename
     };
 }
@@ -6630,29 +6635,49 @@ function getFilename() {
         case 'darwin':
             switch (arch) {
                 case 'arm64':
-                    return `${binaryPrefix}-${platform}-arm64`;
+                    return `${platform}-arm64`;
                 case 'x64':
-                    return `${binaryPrefix}-${platform}-amd64`;
+                    return `${platform}-amd64`;
             }
             break;
         case 'linux':
             switch (arch) {
                 case 'arm':
-                    return `${binaryPrefix}-${platform}-arm-5`;
+                    return `${platform}-arm`;
                 case 'arm64':
-                    return `${binaryPrefix}-${platform}-arm64`;
+                    return `${platform}-arm64`;
                 case 'x64':
-                    return `${binaryPrefix}-${platform}-amd64`;
+                    return `${platform}-amd64`;
             }
             break;
         case 'win32':
             switch (arch) {
                 case 'x64':
-                    return `${binaryPrefix}-windows-amd64.exe`;
+                    return `windows-amd64.exe`;
             }
     }
     throw new Error(`Unsupported platform (${platform}) and architecture (${arch})`);
 }
+async function spawn(command, args, options) {
+    return new Promise((resolve, reject) => {
+        const proc = child_process_1.default.spawn(command, args, options);
+        proc.on('error', reject);
+        proc.on('close', resolve);
+    });
+}
+exports.spawn = spawn;
+async function getDockerEndpoint(context) {
+    const args = ['context', 'inspect', '-f', '{{.Endpoints.docker.Host}}'];
+    if (context !== '') {
+        args.push(context);
+    }
+    const result = await exec.getExecOutput('docker', args);
+    if (result.exitCode !== 0) {
+        throw new Error(`Failed to get docker host: ${result.stderr}`);
+    }
+    return result.stdout.trim();
+}
+exports.getDockerEndpoint = getDockerEndpoint;
 
 
 /***/ }),
@@ -6687,15 +6712,23 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
-const exec = __importStar(__nccwpck_require__(1514));
-const package_json_1 = __nccwpck_require__(4147);
 const common_1 = __nccwpck_require__(9108);
+const package_json_1 = __nccwpck_require__(4147);
 async function run() {
     try {
         core.debug(`version: ${package_json_1.version}`);
         const { toolPath, binaryName } = await (0, common_1.getBinary)(package_json_1.version);
         core.addPath(toolPath);
-        await exec.exec(binaryName, ['save']);
+        const context = core.getInput('docker-context');
+        const dockerEndpoint = await (0, common_1.getDockerEndpoint)(context);
+        const args = ['save'];
+        if (dockerEndpoint !== '') {
+            args.push('--docker-endpoint', dockerEndpoint);
+        }
+        const code = await (0, common_1.spawn)(binaryName, args, { stdio: 'inherit' });
+        if (code !== null && code !== 0) {
+            core.setFailed(`non zero return: ${code}`);
+        }
     }
     catch (error) {
         if (error instanceof Error) {
@@ -6745,6 +6778,14 @@ module.exports = require("events");
 
 "use strict";
 module.exports = require("fs");
+
+/***/ }),
+
+/***/ 3292:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("fs/promises");
 
 /***/ }),
 

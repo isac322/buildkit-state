@@ -4,30 +4,40 @@ import (
 	"bytes"
 	"context"
 	"strconv"
-	"strings"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
-	bkclient "github.com/moby/buildkit/client"
+	"github.com/isac322/buildkit-state/probe/internal/buildkit"
+	gha2 "github.com/isac322/buildkit-state/probe/internal/gha"
+	"github.com/isac322/buildkit-state/probe/internal/remote"
+
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-githubactions"
-	"golang.org/x/exp/slices"
 )
-
-type Saver interface {
-	Save(ctx context.Context, cacheKey string, data []byte) error
-}
 
 func SaveFromContainerToRemote(
 	ctx context.Context,
 	gha *githubactions.Action,
-	docker client.CommonAPIClient,
-	buildkit *bkclient.Client,
-	builderName string,
-	saver Saver,
+	bkCli buildkit.Driver,
+	manager remote.Manager,
 ) (err error) {
+	defer func() {
+		if err != nil {
+			gha.Errorf("Failed to load/save buildkit state: %+v", err)
+		}
+	}()
+
+	if gha.Getenv("RUNNER_DEBUG") == "1" {
+		usage, err := bkCli.PrintDiskUsage(ctx)
+		if err != nil {
+			gha.Errorf("Failed to print disk usage: %+v", err)
+			return err
+		}
+
+		gha.Debugf(string(usage))
+	}
+
 	cacheKey := gha.GetInput(inputPrimaryKey)
-	restoredCacheKey := gha.Getenv("STATE_" + strings.ToUpper(strings.ReplaceAll(stateLoadedCacheKey, " ", "_")))
+	restoredCacheKey := gha.Getenv("STATE_" + stateLoadedCacheKey)
+	gha.Infof("restoredCacheKey: %s, cacheKey: %s", restoredCacheKey, cacheKey)
 
 	if cacheKey == restoredCacheKey {
 		rewriteCache, err := strconv.ParseBool(gha.GetInput(inputRewriteCache))
@@ -45,36 +55,31 @@ func SaveFromContainerToRemote(
 		gha.Group("Remove unwanted caches")
 		defer gha.EndGroup()
 
-		targetTypes := getMultilineInput(gha, inputTargetTypes)
-		filters := make([]string, 0, len(pruneTypes))
-		for _, recordType := range pruneTypes {
-			rt := string(recordType)
-			if slices.Contains(targetTypes, rt) {
-				continue
-			}
-			filters = append(filters, "type=="+rt)
-		}
-
-		err = buildkit.Prune(ctx, nil, bkclient.WithFilter(filters))
+		targetTypes := gha2.GetMultilineInput(gha, inputTargetTypes)
+		err = bkCli.PruneExcept(ctx, targetTypes)
 		if err != nil {
 			gha.Errorf(`Failed to prune caches: %+v`, err)
 			return
 		}
 
-		err = printDiskUsage(ctx, gha, buildkit)
+		var usage []byte
+		usage, err = bkCli.PrintDiskUsage(ctx)
+		if err != nil {
+			gha.Errorf("Failed to print disk usage: %+v", err)
+			return
+		}
+		gha.Infof(string(usage))
 	}()
 	if err != nil {
 		return err
 	}
 
-	containerName := BuildKitContainerNameFromBuilder(builderName)
-
 	func() {
 		gha.Group("Save buildkit state to remote")
 		defer gha.EndGroup()
 
-		gha.Infof("stopping buildkitd...")
-		err = docker.ContainerStop(ctx, containerName, container.StopOptions{})
+		gha.Infof("Stopping buildkitd...")
+		err = bkCli.Stop(ctx)
 		if err != nil {
 			gha.Errorf("Failed to stop buildkitd container: %+v", err)
 			return
@@ -88,14 +93,16 @@ func SaveFromContainerToRemote(
 			return
 		}
 
+		gha.Infof("Extract and compress buildkit state...")
 		var buf *bytes.Buffer
-		buf, err = CompressToZstd(ctx, docker, containerName, compressionLevel)
+		buf, err = CompressToZstd(ctx, bkCli, compressionLevel)
 		if err != nil {
 			gha.Errorf("Failed to compress buildkit state: %+v", err)
 			return
 		}
 
-		err = saver.Save(ctx, cacheKey, buf.Bytes())
+		gha.Infof("Uploading to remote storage...")
+		err = manager.Save(ctx, cacheKey, buf.Bytes())
 		if err != nil {
 			gha.Errorf("Failed to save compressed buildkit sate to remote: %+v", err)
 			return

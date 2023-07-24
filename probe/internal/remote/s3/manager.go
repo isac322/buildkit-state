@@ -1,4 +1,4 @@
-package s3
+package s3manager
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/isac322/buildkit-state/probe/internal"
+	"github.com/isac322/buildkit-state/probe/internal/remote"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -41,14 +41,14 @@ func (m Manager) Load(
 	ctx context.Context,
 	primaryKey string,
 	secondaryKeys []string,
-) (mo.Option[internal.LoadedCache], error) {
+) (mo.Option[remote.LoadedCache], error) {
 	result, err := m.loadLatestOrExactMatch(ctx, primaryKey, secondaryKeys)
 	if err != nil {
-		return mo.None[internal.LoadedCache](), err
+		return mo.None[remote.LoadedCache](), err
 	}
 	metadata, found := result.Get()
 	if !found {
-		return mo.None[internal.LoadedCache](), nil
+		return mo.None[remote.LoadedCache](), nil
 	}
 
 	object, err := m.client.GetObject(
@@ -59,14 +59,14 @@ func (m Manager) Load(
 		},
 	)
 	if err != nil {
-		return mo.None[internal.LoadedCache](), errors.WithStack(err)
+		return mo.None[remote.LoadedCache](), errors.WithStack(err)
 	}
 
 	rel, err := filepath.Rel(version, *metadata.Key)
 	if err != nil {
-		return mo.None[internal.LoadedCache](), errors.Wrap(err, "version does not match")
+		return mo.None[remote.LoadedCache](), errors.Wrap(err, "version does not match")
 	}
-	return mo.Some(internal.LoadedCache{
+	return mo.Some(remote.LoadedCache{
 		Key:   rel,
 		Data:  object.Body,
 		Extra: nil,
@@ -163,7 +163,4 @@ func (m Manager) buildS3Key(key string) string {
 	return path.Join(version, m.keyPrefix, key)
 }
 
-var (
-	_ internal.Loader = Manager{}
-	_ internal.Saver  = Manager{}
-)
+var _ remote.Manager = Manager{}

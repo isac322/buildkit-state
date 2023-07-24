@@ -1,14 +1,24 @@
 import * as core from '@actions/core'
-import * as exec from '@actions/exec'
+import {getBinary, getDockerEndpoint, spawn} from './common'
 import {version} from '../package.json'
-import {getBinary} from './common'
 
 async function run(): Promise<void> {
   try {
     core.debug(`version: ${version}`)
     const {toolPath, binaryName} = await getBinary(version)
     core.addPath(toolPath)
-    await exec.exec(binaryName, ['save'])
+
+    const context = core.getInput('docker-context')
+    const dockerEndpoint = await getDockerEndpoint(context)
+
+    const args = ['save']
+    if (dockerEndpoint !== '') {
+      args.push('--docker-endpoint', dockerEndpoint)
+    }
+    const code = await spawn(binaryName, args, {stdio: 'inherit'})
+    if (code !== null && code !== 0) {
+      core.setFailed(`non zero return: ${code}`)
+    }
   } catch (error) {
     if (error instanceof Error) {
       core.setFailed(error.message)
