@@ -11,7 +11,7 @@ async function loadCache(
   zstdWindowSize: number | null
 ): Promise<number | null> {
   return new Promise((resolve, reject) => {
-    const zstdArgs = ['-T0', '-d', '--stdout', '--', cachePath]
+    const zstdArgs = ['-T0', '-d', '--stdout', '--force', '--', cachePath]
     if (zstdWindowSize !== null) {
       zstdArgs.push(`--long=${zstdWindowSize}`)
     }

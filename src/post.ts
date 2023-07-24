@@ -34,6 +34,7 @@ async function saveCache(
     const zstdArgs = [
       '-T0',
       `-${compressionLevel}`,
+      '--force',
       '-cf',
       cachePath,
       '--',
