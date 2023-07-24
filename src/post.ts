@@ -129,11 +129,6 @@ async function run(): Promise<void> {
       }
     })
 
-    if (!core.getBooleanInput('resume-builder')) {
-      core.debug('Skip buildx resuming')
-      return
-    }
-
     await cache.saveCache([common.ARCHIVE_PATH], cacheKey)
   } catch (error) {
     if (error instanceof Error) {
