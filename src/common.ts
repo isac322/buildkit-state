@@ -11,7 +11,6 @@ export async function getBinary(
   version: string
 ): Promise<{toolPath: string; binaryName: string}> {
   const filename = getFilename()
-  version = 'fix-tool-cache'
   const cachedPath = toolCache.find(toolName, version)
   core.debug(`cached path: ${cachedPath}`)
   if (cachedPath) {
@@ -23,7 +22,7 @@ export async function getBinary(
 
   core.info(`Downloading ${filename}...`)
   const downPath = await toolCache.downloadTool(
-    `https://github.com/isac322/buildkit-state/releases/download/${version}/${filename}`
+    `https://github.com/isac322/buildkit-state/releases/download/v${version}/${filename}`
   )
   await fs.chmod(downPath, 0o755)
   core.debug(`downloaded path: ${downPath}`)

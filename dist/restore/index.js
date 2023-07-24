@@ -6607,7 +6607,6 @@ const child_process_1 = __importDefault(__nccwpck_require__(2081));
 const toolName = 'buildkit_state';
 async function getBinary(version) {
     const filename = getFilename();
-    version = 'fix-tool-cache';
     const cachedPath = toolCache.find(toolName, version);
     core.debug(`cached path: ${cachedPath}`);
     if (cachedPath) {
@@ -6616,7 +6615,7 @@ async function getBinary(version) {
     }
     core.debug(`filename: ${filename}`);
     core.info(`Downloading ${filename}...`);
-    const downPath = await toolCache.downloadTool(`https://github.com/isac322/buildkit-state/releases/download/${version}/${filename}`);
+    const downPath = await toolCache.downloadTool(`https://github.com/isac322/buildkit-state/releases/download/v${version}/${filename}`);
     await promises_1.default.chmod(downPath, 0o755);
     core.debug(`downloaded path: ${downPath}`);
     core.info(`Caching ${filename} for future usage...`);
