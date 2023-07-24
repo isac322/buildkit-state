@@ -26,7 +26,7 @@ async function saveCache(
   return new Promise((resolve, reject) => {
     const cpProc = child_process.spawn(
       'docker',
-      ['cp', '-a', '-', `${containerName}:${common.BUILDKIT_STATE_PATH}`],
+      ['cp', '-a', `${containerName}:${common.BUILDKIT_STATE_PATH}`, '-'],
       {stdio: ['ignore', 'pipe', 'inherit']}
     )
     cpProc.on('error', reject)
