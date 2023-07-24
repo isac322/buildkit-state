@@ -1,24 +1,135 @@
+import * as cache from '@actions/cache'
 import * as core from '@actions/core'
-import {getBinary, getDockerEndpoint, spawn} from './common'
-import {version} from '../package.json'
+import * as exec from '@actions/exec'
+import * as io from '@actions/io'
+import child_process from 'child_process'
+import path from 'path'
+import * as common from './common'
+
+const cacheTypes = [
+  'internal',
+  'frontend',
+  'source.local',
+  'source.git.checkout',
+  'exec.cachemount',
+  'regular'
+]
+
+async function saveCache(
+  cachePath: string,
+  containerName: string,
+  compressionLevel: number,
+  zstdWindowSize: number | null
+): Promise<number | null> {
+  await io.mkdirP(path.dirname(cachePath))
+
+  return new Promise((resolve, reject) => {
+    const cpProc = child_process.spawn(
+      'docker',
+      ['cp', '-a', `${containerName}:${common.BUILDKIT_STATE_PATH}`, '-'],
+      {stdio: ['ignore', 'pipe', 'inherit']}
+    )
+    cpProc.on('error', reject)
+
+    const zstdArgs = [
+      '-T0',
+      `-${compressionLevel}`,
+      '--force',
+      '-o',
+      cachePath,
+      '-'
+    ]
+    if (zstdWindowSize !== null) {
+      zstdArgs.splice(1, 0, `--long=${zstdWindowSize}`)
+    }
+    const zstdProc = child_process.spawn('zstd', zstdArgs, {
+      stdio: ['pipe', 'inherit', 'inherit']
+    })
+
+    cpProc.stdout.on('data', chunk => zstdProc.stdin.write(chunk))
+    cpProc.on('close', code => {
+      zstdProc.stdin.end()
+      if (code !== 0) {
+        cpProc.kill('SIGTERM')
+      }
+    })
+    zstdProc.on('error', reject)
+    zstdProc.on('close', resolve)
+  })
+}
 
 async function run(): Promise<void> {
+  const cacheKey = core.getInput('cache-key')
+  core.info(`cacheKey: ${cacheKey}`)
+  const restoredCacheKey = core.getState(common.STATE_RESTORED_KEY)
+  core.info(`restoredCacheKey: ${restoredCacheKey}`)
+  if (cacheKey === restoredCacheKey && !core.getBooleanInput('rewrite-cache')) {
+    core.info('Cache key matched. Ignore cache saving.')
+    return
+  }
+
+  const builderName = core.getInput('buildx-name')
+  core.debug(`Builder name: ${builderName}`)
+  const containerName = common.getContainerName(builderName)
+  core.debug(`Container name: ${containerName}`)
+
   try {
-    core.debug(`version: ${version}`)
-    const {toolPath, binaryName} = await getBinary(version)
-    core.addPath(toolPath)
+    await core.group('Remove unwanted caches', async () => {
+      const toCache = core.getMultilineInput('target-types')
+      const exitCodes = await Promise.all(
+        cacheTypes
+          .filter(value => !toCache.includes(value))
+          .map(async t =>
+            exec.exec('docker', [
+              'buildx',
+              'prune',
+              '--force',
+              '--builder',
+              builderName,
+              '--filter',
+              `type=${t}`
+            ])
+          )
+      )
 
-    const context = core.getInput('docker-context')
-    const dockerEndpoint = await getDockerEndpoint(context)
+      if (!exitCodes.every(v => v === 0)) {
+        core.setFailed('Failed with non zero return')
+        return
+      }
 
-    const args = ['save']
-    if (dockerEndpoint !== '') {
-      args.push('--docker-endpoint', dockerEndpoint)
+      await exec.exec('docker', [
+        'buildx',
+        'du',
+        '--verbose',
+        '--builder',
+        builderName
+      ])
+    })
+
+    await core.group('Stop buildkit daemon', async () => {
+      await exec.exec('docker', ['buildx', 'stop', builderName])
+    })
+
+    let zstdWindowSize: number | null = parseInt(core.getInput('window-size'))
+    if (!(await common.downloadZstdIfNotExistAndCheckIfSupportsLong())) {
+      zstdWindowSize = null
     }
-    const code = await spawn(binaryName, args, {stdio: 'inherit'})
-    if (code !== null && code !== 0) {
-      core.setFailed(`non zero return: ${code}`)
-    }
+
+    await core.group('Save cache from builder', async () => {
+      const compressionLevel = parseInt(core.getInput('compression-level'))
+      const exitCode = await saveCache(
+        common.ARCHIVE_PATH,
+        containerName,
+        compressionLevel,
+        zstdWindowSize
+      )
+      if (exitCode !== 0) {
+        core.setFailed(`Failed with non zero return: ${exitCode}`)
+        return
+      }
+    })
+
+    await cache.saveCache([common.ARCHIVE_PATH], cacheKey)
   } catch (error) {
     if (error instanceof Error) {
       core.setFailed(error.message)

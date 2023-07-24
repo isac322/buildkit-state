@@ -1,6 +1,6 @@
 {
   "name": "buildkit-state",
-  "version": "2.0.1",
+  "version": "2.0.0",
   "private": true,
   "description": "Load and save buildkit state.",
   "main": "lib/main.js",
@@ -9,7 +9,7 @@
     "format": "prettier --write '**/*.ts'",
     "format-check": "prettier --check '**/*.ts'",
     "lint": "eslint src/**/*.ts",
-    "package": "ncc build -s -o dist/restore src/main.ts --license license.txt && ncc build -s -o dist/save src/post.ts --license license.txt",
+    "package": "ncc build --target es2021 -m -o dist/restore src/main.ts --license license.txt && ncc build --target es2021 -m -o dist/save src/post.ts --license license.txt",
     "all": "npm run build && npm run format && npm run lint && npm run package",
     "compile-on-docker": "docker run --rm -ti -v $(pwd):/app:ro -v $(pwd)/dist:/app/dist -v $(mktemp -d):/app/node_modules -v $(mktemp -d):/app/lib --workdir /app node:16 bash -ceux 'npm ci && npm run build && npm run package'"
   },
@@ -29,13 +29,17 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@actions/cache": "^3.2.1",
     "@actions/core": "^1.10.0",
     "@actions/exec": "^1.1.1",
-    "@actions/tool-cache": "^2.0.1"
+    "@actions/io": "^1.1.3",
+    "@actions/tool-cache": "^2.0.1",
+    "semver": "^7.5.4"
   },
   "devDependencies": {
     "@tsconfig/node16": "^16.1.0",
     "@types/node": "^16.11.7",
+    "@types/semver": "^7.5.0",
     "@typescript-eslint/eslint-plugin": "^6.1.0",
     "@typescript-eslint/parser": "^6.1.0",
     "@vercel/ncc": "^0.36.1",
