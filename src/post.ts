@@ -1,7 +1,9 @@
 import * as cache from '@actions/cache'
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
+import * as io from '@actions/io'
 import child_process from 'child_process'
+import path from 'path'
 import * as common from './common'
 
 const cacheTypes = [
@@ -19,6 +21,8 @@ async function saveCache(
   compressionLevel: number,
   zstdWindowSize: number | null
 ): Promise<number | null> {
+  await io.mkdirP(path.dirname(cachePath))
+
   return new Promise((resolve, reject) => {
     const cpProc = child_process.spawn(
       'docker',
