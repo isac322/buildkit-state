@@ -94,6 +94,14 @@ async function run(): Promise<void> {
         core.setFailed('Failed with non zero return')
         return
       }
+
+      await exec.exec('docker', [
+        'buildx',
+        'du',
+        '--verbose',
+        '--builder',
+        builderName
+      ])
     })
 
     await core.group('Stop buildkit daemon', async () => {

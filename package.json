@@ -9,7 +9,7 @@
     "format": "prettier --write '**/*.ts'",
     "format-check": "prettier --check '**/*.ts'",
     "lint": "eslint src/**/*.ts",
-    "package": "ncc build -s -o dist/restore src/main.ts --license license.txt && ncc build -s -o dist/save src/post.ts --license license.txt",
+    "package": "ncc build --target es2021 -m -s -o dist/restore src/main.ts --license license.txt && ncc build --target es2021 -m -s -o dist/save src/post.ts --license license.txt",
     "all": "npm run build && npm run format && npm run lint && npm run package",
     "compile-on-docker": "docker run --rm -ti -v $(pwd):/app:ro -v $(pwd)/dist:/app/dist -v $(mktemp -d):/app/node_modules -v $(mktemp -d):/app/lib --workdir /app node:16 bash -ceux 'npm ci && npm run build && npm run package'"
   },
