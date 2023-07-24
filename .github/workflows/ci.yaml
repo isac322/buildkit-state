@@ -4,7 +4,9 @@ on:
   push:
     paths:
       - probe/**
+      - dist/**
       - package.json
+      - action.yaml
       - .github/workflows/ci.yaml
 
   workflow_dispatch:
