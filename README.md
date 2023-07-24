@@ -29,14 +29,14 @@ gantt
     axisFormat %s
 
     section First build
-        Vanilla (6m37s)               : active, 0, 337
-        With BuildKit Caching (6m41s) :         0, 341
+        Vanilla (6m37s): active, 0, 337
+        With BuildKit Caching (6m41s): 0, 341
     section Second build
-        Vanilla (6m37s)             : active, 0, 337
-        With BuildKit Caching (10s) :         0, 10
+        Vanilla (6m37s): active, 0, 337
+        With BuildKit Caching (10s): 0, 10
     section Add a dep
-        Vanilla (6m39s)             : active, 0, 339
-        With BuildKit Caching (10s) :         0, 10
+        Vanilla (6m39s): active, 0, 339
+        With BuildKit Caching (10s): 0, 10
 ```
 
 ## Usage
@@ -78,22 +78,19 @@ jobs:
           push: false
 ```
 
-
 ## Inputs
 
-| Name                 | Type                |         Required         | Default value                                       | Description                                                                                                |
-|----------------------|---------------------|:------------------------:|-----------------------------------------------------|------------------------------------------------------------------------------------------------------------|
-| `buildx-name`        | String              |            ⭕             |                                                     | Name of buildx. Fill name output `of docker/setup-buildx-action` actions.                                  |
-| `cache-key`          | String              |            ⭕             | `${{ runner.os }}-buildkit_state-${{ github.sha }}` | Unique id of cache. When loading, it is used for retrieval, and when saving, it is allocated to the cache. |
-| `cache-restore-keys` | List of string      |            ⭕             | `${{ runner.os }}-buildkit_state-`                  | Keys to be used if the search with `cache-key` fails on load.                                              |
-| `remote-type`        | Enum: `gha` or `s3` |            ⭕             | `gha`                                               | Remote cache storage to store buildkit state (`gha` or `s3`)                                               |
-| `target-types`       | List of enum ¹      |            ⭕             | `exec.cachemount` and `frontend`                    | Choose which type of BuildKit state to save. You can use the default value in most cases.                  |
-| `rewrite-cache`      | Boolean             |                          | `false`                                             | Whether to overwrite when the same cache key already exists.                                               |
-| `save-on-failure`    | Boolean             |                          | `false`                                             | Whether to save cache even if job fails.                                                                   |
-| `compression-level`  | Integer (1~22)      |                          | `3`                                                 | Zstd compression level (from 1 to 22)                                                                      |
-| `s3-bucket-name`     | String              | if `remote-type` is `s3` |                                                     | S3 bucket name to store cache (required if `remote-type` is `s3`)                                          |
-| `s3-key-prefix`      | String              | if `remote-type` is `s3` |                                                     | S3 key prefix (required if `remote-type` is `s3`)                                                          |
-| `s3-url`             | String              | if `remote-type` is `s3` |                                                     | URL of S3 (only required if non-AWS S3 but S3 compatible object storage like Minio)                        |
+| Name                 | Type            | Required | Default value                                       | Description                                                                                                |
+|----------------------|-----------------|:--------:|-----------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| `buildx-name`        | String          |    ⭕     |                                                     | Name of buildx. Fill name output `of docker/setup-buildx-action` actions.                                  |
+| `cache-key`          | String          |    ⭕     | `${{ runner.os }}-buildkit_state-${{ github.sha }}` | Unique id of cache. When loading, it is used for retrieval, and when saving, it is allocated to the cache. |
+| `cache-restore-keys` | List of string  |    ⭕     | `${{ runner.os }}-buildkit_state-`                  | Keys to be used if the search with `cache-key` fails on load.                                              |
+| `target-types`       | List of enum ¹  |    ⭕     | `exec.cachemount` and `frontend`                    | Choose which type of BuildKit state to save. You can use the default value in most cases.                  |
+| `rewrite-cache`      | Boolean         |          | `false`                                             | Whether to overwrite when the same cache key already exists.                                               |
+| `save-on-failure`    | Boolean         |          | `false`                                             | Whether to save cache even if job fails.                                                                   |
+| `resume-builder`     | Boolean         |          | `true`                                              | Resume buildx builder after successfully load cache and print disk usage.                                  |
+| `compression-level`  | Integer (1~22)  |          | `3`                                                 | Zstd compression level (from 1 to 22)                                                                      |
+| `window-size`        | Integer (10~31) |          | `27`                                                | Zstd window size (from 10 to 31)                                                                           |
 
 > Note
 > - ¹ Currently `regular`, `source.local`, `exec.cachemount`, `frontend`, `internal` are
@@ -109,9 +106,7 @@ jobs:
 
 In most case, you **do not need to consider** these requirements.  
 Github hosted runner fulfill all these requirements,
-but self hosted runner or self hosted BuildKit daemon may not work.
+but self hosted BuildKit daemon may not work.
 
-- Supported github actions runner OS &
-  Arch: `linux/arm64`, `linux/amd64`, `linux/arm`, `darwin/amd64`, `darwin/arm64`, `windows/amd64`
 - Only supports [BuildKit docker-container driver](https://docs.docker.com/build/drivers/) (which is default driver
   of `docker/setup-buildx-action`)
