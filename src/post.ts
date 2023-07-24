@@ -35,9 +35,8 @@ async function saveCache(
       '-T0',
       `-${compressionLevel}`,
       '--force',
-      '-cf',
+      '-o',
       cachePath,
-      '--',
       '-'
     ]
     if (zstdWindowSize !== null) {
@@ -60,13 +59,11 @@ async function saveCache(
 }
 
 async function run(): Promise<void> {
-  const primaryKey = core.getInput('cache-key')
+  const cacheKey = core.getInput('cache-key')
+  core.info(`cacheKey: ${cacheKey}`)
   const restoredCacheKey = core.getState(common.STATE_RESTORED_KEY)
-  core.info(`restoredCacheKey: ${restoredCacheKey}, cacheKey: ${primaryKey}`)
-  if (
-    primaryKey === restoredCacheKey &&
-    !core.getBooleanInput('rewrite-cache')
-  ) {
+  core.info(`restoredCacheKey: ${restoredCacheKey}`)
+  if (cacheKey === restoredCacheKey && !core.getBooleanInput('rewrite-cache')) {
     core.info('Cache key matched. Ignore cache saving.')
     return
   }
@@ -137,7 +134,7 @@ async function run(): Promise<void> {
       return
     }
 
-    await cache.saveCache([common.ARCHIVE_PATH], primaryKey)
+    await cache.saveCache([common.ARCHIVE_PATH], cacheKey)
   } catch (error) {
     if (error instanceof Error) {
       core.setFailed(error.message)
