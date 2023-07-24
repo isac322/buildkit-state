@@ -5,7 +5,6 @@ on:
     branches:
       - master
     paths:
-      - probe/**
       - package.json
       - .github/workflows/release.yaml
 
@@ -22,35 +21,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Load buildkit state
-        uses: isac322/buildkit-state@v2
-        with:
-          buildx-name: ${{ steps.buildx.outputs.name }}
-
-      - name: Build
-        uses: docker/build-push-action@v4
-        with:
-          push: false
-          context: "{{defaultContext}}:probe"
-          outputs: type=local,dest=build
-          platforms: |
-            linux/arm64
-            linux/amd64
-            darwin/arm64
-            darwin/amd64
-            windows/arm64
-            windows/amd64
-
-      - name: Check and rename binaries
-        # language=Bash
-        run: |
-          ls -ahl probe/build
-          find probe/build -type f -wholename 'probe/build/windows_*/*' -exec mv {} {}.exe \;
 
       - name: Check if version has been updated
         id: check

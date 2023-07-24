@@ -2,56 +2,48 @@ name: CI
 
 on:
   push:
-    paths:
-      - probe/**
-      - dist/**
-      - package.json
-      - action.yaml
-      - .github/workflows/ci.yaml
 
   workflow_dispatch:
 
 
 jobs:
-  lint:
+  check-dist:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v3
 
-      - uses: actions/setup-go@v4
+      - name: Set Node.js 16.x
+        uses: actions/setup-node@v3
         with:
-          go-version-file: probe/go.mod
-          cache: false
+          node-version: 16.x
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: latest
-          working-directory: probe
-          args: --allow-parallel-runners --verbose
-
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - uses: actions/setup-go@v4
-        with:
-          go-version-file: probe/go.mod
-          cache-dependency-path: probe/go.sum
-
-      - name: Run minio for integration test
-        working-directory: probe
+      - name: Install dependencies
         # language=Bash
-        run: docker compose run --detach --rm --remove-orphans --service-ports minio
+        run: npm ci
 
-      - name: Run test
-        working-directory: probe
+      - name: Rebuild the dist/ directory
         # language=Bash
-        run: go test -race ./...
-        env:
-          S3_HOST: localhost
-          S3_PORT: 9090
+        run: |
+          npm run build
+          npm run package
+
+      - name: Compare the expected and actual dist/ directories
+        # language=Bash
+        run: |
+          if [ "$(git diff --ignore-space-at-eol --text dist/ | wc -l)" -gt "0" ]; then
+            echo "Detected uncommitted changes after build.  See status below:"
+            git diff
+            exit 1
+          fi
+        id: diff
+
+      # If index.js was different than expected, upload the expected version as an artifact
+      - uses: actions/upload-artifact@v3
+        if: failure() && steps.diff.conclusion == 'failure'
+        with:
+          name: dist
+          path: dist/
 
   build:
     runs-on: ubuntu-latest
