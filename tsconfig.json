@@ -2,10 +2,12 @@
   "extends": "@tsconfig/node16/tsconfig",
   "compilerOptions": {
     "outDir": "./lib",
+    "rootDir": "./src",
     "noImplicitAny": true,
     "resolveJsonModule": true
   },
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "**/*.test.ts"
   ]
 }
