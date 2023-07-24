@@ -3,99 +3,110 @@ import os from 'os'
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 import * as toolCache from '@actions/tool-cache'
-import child_process from 'child_process'
+import semver from 'semver'
 
-const toolName = 'buildkit_state'
+export const STATE_RESTORED_KEY = 'restored-cache-key'
+export const ARCHIVE_PATH = '/tmp/buildkit-cache/buildkit-state.tar.zst'
+export const BUILDKIT_STATE_PATH = '/var/lib/buildkit'
+const zstdVersionLongAdded = new semver.SemVer('v1.3.2')
+const TOOL_NAME_ZSTD = 'static-zstd-slim'
 
-export async function getBinary(
-  version: string
-): Promise<{toolPath: string; binaryName: string}> {
-  const filename = getFilename()
-  const cachedPath = toolCache.find(toolName, version)
-  core.debug(`cached path: ${cachedPath}`)
-  if (cachedPath) {
-    core.info('Restore from cache')
-    return {toolPath: cachedPath, binaryName: filename}
+async function getVersion(
+  app: string,
+  additionalArgs: string[] = []
+): Promise<string> {
+  let versionOutput = ''
+  additionalArgs.push('--version')
+  core.debug(`Checking ${app} ${additionalArgs.join(' ')}`)
+  try {
+    await exec.exec(app, additionalArgs, {
+      ignoreReturnCode: true,
+      silent: true,
+      listeners: {
+        stdout: data => (versionOutput += data.toString()),
+        stderr: data => (versionOutput += data.toString())
+      }
+    })
+  } catch (err) {
+    if (err instanceof Error) {
+      core.debug(err.message)
+    }
   }
-
-  core.debug(`filename: ${filename}`)
-
-  core.info(`Downloading ${filename}...`)
-  const downPath = await toolCache.downloadTool(
-    `https://github.com/isac322/buildkit-state/releases/download/v${version}/${filename}`
-  )
-  await fs.chmod(downPath, 0o755)
-  core.debug(`downloaded path: ${downPath}`)
-  core.info(`Caching ${filename} for future usage...`)
-  const toolPath = await toolCache.cacheFile(
-    downPath,
-    filename,
-    toolName,
-    version
-  )
-  core.debug(`toolPath: ${toolPath}`)
-  return {
-    toolPath,
-    binaryName: filename
-  }
+  versionOutput = versionOutput.trim()
+  core.debug(versionOutput)
+  return versionOutput
 }
 
-function getFilename(): string {
-  const platform = os.platform()
-  const arch = os.arch()
-
-  switch (platform) {
-    case 'darwin':
-      switch (arch) {
-        case 'arm64':
-          return `${platform}-arm64`
-        case 'x64':
-          return `${platform}-amd64`
-      }
-      break
-    case 'linux':
-      switch (arch) {
-        case 'arm':
-          return `${platform}-arm`
-        case 'arm64':
-          return `${platform}-arm64`
-        case 'x64':
-          return `${platform}-amd64`
-      }
-      break
-    case 'win32':
-      switch (arch) {
-        case 'x64':
-          return `windows-amd64.exe`
-      }
-  }
-  throw new Error(
-    `Unsupported platform (${platform}) and architecture (${arch})`
-  )
+async function getZstdVersion(binPath: string): Promise<string | null> {
+  const versionOutput = await getVersion(binPath, ['--quiet'])
+  return semver.clean(versionOutput)
 }
 
-export async function spawn(
-  command: string,
-  args: readonly string[],
-  options: child_process.SpawnOptions
-): Promise<number | null> {
-  return new Promise((resolve, reject) => {
-    const proc = child_process.spawn(command, args, options)
-    proc.on('error', reject)
-    proc.on('close', resolve)
+export async function downloadZstdIfNotExistAndCheckIfSupportsLong(): Promise<boolean> {
+  let version = await getZstdVersion('zstd')
+  core.debug(`zstd version: ${version}`)
+  if (version === null) {
+    if (os.platform() !== 'linux') {
+      throw new Error(
+        'Does not support to install zstd dynamically. Please install it on runner itself.'
+      )
+    }
+
+    version = await tryInstallZstd()
+  }
+
+  return semver.gte(version, zstdVersionLongAdded)
+}
+
+async function tryInstallZstd(): Promise<string> {
+  return await core.group('Install zstd', async (): Promise<string> => {
+    const binaryName = getBinaryName()
+    core.debug(`BinaryName: ${binaryName}`)
+    if (binaryName === null) {
+      throw new Error('Can not find zstd binary for the architecture.')
+    }
+
+    core.info(`Downloading ${binaryName}...`)
+    const downPath = await toolCache.downloadTool(
+      `https://github.com/isac322/static-bin/releases/download/zstd-slim/${binaryName}`
+    )
+    core.debug(`Downloaded path: ${downPath}`)
+    await fs.chmod(downPath, 0o755)
+
+    const zstdVer = await getZstdVersion(downPath)
+    if (zstdVer === null) {
+      throw new Error('Failed to download zstd')
+    }
+
+    core.info(`Caching zstd:${zstdVer} for future usage...`)
+    const toolPath = await toolCache.cacheFile(
+      downPath,
+      'zstd',
+      TOOL_NAME_ZSTD,
+      zstdVer
+    )
+    core.addPath(toolPath)
+    return zstdVer
   })
 }
 
-export async function getDockerEndpoint(context: string): Promise<string> {
-  const args = ['context', 'inspect', '-f', '{{.Endpoints.docker.Host}}']
-  if (context !== '') {
-    args.push(context)
+function getBinaryName(): string | null {
+  switch (os.arch()) {
+    case 'arm64':
+      return 'arm64'
+    case 'x64':
+      return 'amd64'
+    case 'ppc64':
+      return 'ppc64el'
+    case 's390x':
+      return 's390x'
+    case 'arm':
+      return 'armv7l'
+    default:
+      return null
   }
-  const result = await exec.getExecOutput('docker', args)
+}
 
-  if (result.exitCode !== 0) {
-    throw new Error(`Failed to get docker host: ${result.stderr}`)
-  }
-
-  return result.stdout.trim()
+export function getContainerName(builderName: string): string {
+  return `buildx_buildkit_${builderName}0`
 }

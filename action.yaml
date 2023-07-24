@@ -38,6 +38,9 @@ inputs:
   compression-level:
     description: Zstd compression level (from 1 to 22)
     default: "3"
+  window-size:
+    description: Zstd window size (from 10 to 31)
+    default: "27"
   s3-bucket-name:
     description: S3 bucket name to store cache (required if `remote-type` is `s3`)
   s3-key-prefix:
