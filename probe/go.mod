@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.28
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.27
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.37.0
-	github.com/aws/smithy-go v1.13.5
+	github.com/aws/smithy-go v1.14.1
 	github.com/caarlos0/env/v9 v9.0.0
 	github.com/docker/docker v24.0.5+incompatible
 	github.com/goccy/go-json v0.10.2
