@@ -22,7 +22,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Check if version has been updated
         if: github.event_name != 'workflow_dispatch'
