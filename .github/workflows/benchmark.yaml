@@ -24,7 +24,7 @@ jobs:
           cache-restore-keys: ''
 
       - name: Build
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: example/python
           file: example/python/Dockerfile-buildkit-cache
@@ -56,7 +56,7 @@ jobs:
             ${{ runner.os }}-buildkit_state-python
 
       - name: Build
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: example/python
           file: example/python/Dockerfile-buildkit-cache
@@ -71,7 +71,7 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - name: Build
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: example/python
           file: example/python/Dockerfile-no-cache
@@ -93,7 +93,7 @@ jobs:
           sed -Ei 's/(\w*"pydantic==.+?".*)/\1\n"arrow==1.2.3",/' pyproject.toml
 
       - name: Build
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: example/python
           file: example/python/Dockerfile-no-cache
