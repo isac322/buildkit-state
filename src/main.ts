@@ -10,6 +10,12 @@ async function loadCache(
   containerName: string,
   zstdWindowSize: number | null
 ): Promise<number | null> {
+  let save_on_failure = core.getInput('save-on-failure').toLowerCase()
+  if (save_on_failure !== 'true') {
+    save_on_failure = 'false'
+  }
+  core.exportVariable('SAVE_ON_FAILURE', save_on_failure)
+
   return new Promise((resolve, reject) => {
     const zstdArgs = ['-T0', '-d', '--stdout', '--force', '--', cachePath]
     if (zstdWindowSize !== null) {
