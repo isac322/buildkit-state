@@ -38,6 +38,6 @@ jobs:
 
       - name: Update tag
         if: github.event_name == 'workflow_dispatch' || steps.check.outputs.changed == 'true'
-        uses: actions/publish-action@v0.2.2
+        uses: actions/publish-action@v0.3.0
         with:
           source-tag: 'v${{ steps.check.outputs.version || inputs.version }}'
