@@ -16,7 +16,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/samber/mo v1.11.0
 	github.com/sethvargo/go-githubactions v1.1.0
-	github.com/spf13/cobra v1.7.0
+	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.8.4
 	github.com/tonistiigi/go-actions-cache v0.0.0-20220404170428-0bdeb6e1eac7
 	github.com/tonistiigi/units v0.0.0-20180711220420-6950e57a87ea
