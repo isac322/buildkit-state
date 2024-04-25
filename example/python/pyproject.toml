@@ -14,7 +14,7 @@ dependencies = [
     "uvicorn[standard]~=0.23.0",
     "fastapi~=0.100.0",
     "ujson==5.4.0", # does not packaged for python 3.11
-    "pydantic==1.9.2", # does not packaged for python 3.11
+    "pydantic==1.10.13", # does not packaged for python 3.11
 ]
 
 [project.urls]
