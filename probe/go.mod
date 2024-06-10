@@ -3,11 +3,11 @@ module github.com/isac322/buildkit-state/probe
 go 1.20
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.22.1
+	github.com/aws/aws-sdk-go-v2 v1.27.2
 	github.com/aws/aws-sdk-go-v2/config v1.22.2
 	github.com/aws/aws-sdk-go-v2/credentials v1.15.1
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.42.0
-	github.com/aws/smithy-go v1.16.0
+	github.com/aws/smithy-go v1.20.2
 	github.com/caarlos0/env/v9 v9.0.0
 	github.com/docker/docker v24.0.7+incompatible
 	github.com/goccy/go-json v0.10.2
