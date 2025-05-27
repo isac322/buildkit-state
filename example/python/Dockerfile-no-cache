@@ -1,8 +1,7 @@
 FROM python:3.11 as builder
 WORKDIR /app
 
-COPY pyproject.toml .
-COPY example example
+COPY . .
 
 RUN pip install build  \
     && python -m build --wheel --outdir /dist  \
