@@ -1,6 +1,6 @@
 module github.com/isac322/buildkit-state/probe
 
-go 1.20
+go 1.22
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.22.1
@@ -11,7 +11,7 @@ require (
 	github.com/caarlos0/env/v9 v9.0.0
 	github.com/docker/docker v24.0.7+incompatible
 	github.com/goccy/go-json v0.10.2
-	github.com/klauspost/compress v1.17.2
+	github.com/klauspost/compress v1.18.0
 	github.com/moby/buildkit v0.12.3
 	github.com/pkg/errors v0.9.1
 	github.com/samber/mo v1.11.0
